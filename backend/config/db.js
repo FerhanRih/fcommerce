@@ -1,15 +1,27 @@
 const { Sequelize } = require('sequelize');
 
-const sequelize = new Sequelize('fcommerce_db2', 'fcommerce_user', 'MyProjectPass123!', {
-  host: '127.0.0.1',
-  dialect: 'mysql',
-  logging: console.log, // Changed from false to print exact SQL errors
-  pool: {
-    max: 10,
-    min: 0,
-    acquire: 30000,
-    idle: 10000
+const sequelize = new Sequelize(
+  process.env.DB_NAME || 'defaultdb',
+  process.env.DB_USER || 'avnadmin',
+  process.env.DB_PASSWORD,
+  {
+    host: process.env.DB_HOST || '127.0.0.1',
+    port: process.env.DB_PORT || 26484,
+    dialect: 'mysql',
+    logging: console.log,
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false // Required for cloud databases like Aiven
+      }
+    },
+    pool: {
+      max: 10,
+      min: 0,
+      acquire: 30000,
+      idle: 10000
+    }
   }
-});
+);
 
 module.exports = sequelize;
