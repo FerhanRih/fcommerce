@@ -137,7 +137,7 @@ app.get('/', (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-const syncOptions = { alter: false };
+const syncOptions = { alter: true };
 sequelize
   .sync(syncOptions)
   .then(() => {
