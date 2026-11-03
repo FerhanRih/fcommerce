@@ -137,11 +137,31 @@ app.get('/', (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
+// Temporary Superadmin Promotion Script
+const makeSuperAdmin = async () => {
+  try {
+    const user = await User.findOne({ where: { phone: '0904334128' } });
+    if (user) {
+      user.role = 'superadmin';
+      await user.save();
+      console.log('🔥 SUCCESS: User promoted to superadmin!');
+    } else {
+      console.log('⚠️ User not found. Make sure you registered with this phone number first.');
+    }
+  } catch (err) {
+    console.error('Promotion error:', err);
+  }
+};
+
 const syncOptions = { alter: true };
 sequelize
   .sync(syncOptions)
-  .then(() => {
+  .then(async () => {
     console.log('✅ Database connected & models synced.');
+
+    // Run it once on startup (you can comment this line out after the first deploy)
+    await makeSuperAdmin();
+
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
     });
