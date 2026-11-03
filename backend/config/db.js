@@ -8,11 +8,12 @@ const sequelize = new Sequelize(
     host: process.env.DB_HOST || '127.0.0.1',
     port: process.env.DB_PORT || 26484,
     dialect: 'mysql',
-    logging: console.log,
+    logging: false,
     dialectOptions: {
       ssl: {
-        require: true,
-        rejectUnauthorized: false // Required for cloud databases like Aiven
+        rejectUnauthorized: false,
+        // Ensures Aiven's ssl-mode=REQUIRED is respected
+        require: true
       }
     },
     pool: {
