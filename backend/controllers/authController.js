@@ -62,14 +62,14 @@ const register = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create User
-    const newUser = await User.create({
-      phone: formattedPhone,
-      name: formattedName,
-      password: hashedPassword,
-      role: 'buyer',
-      is_verified: true,
-    });
+   // Create User
+const newUser = await User.create({
+  phone: formattedPhone,
+  name: formattedName,
+  password: hashedPassword,
+  role: req.body.role || 'customer', // Fixed: Defaults to valid ENUM choice 'customer'
+  is_verified: true,
+});
 
     // Re-fetch user including Store association
     const user = await User.findByPk(newUser.id, {
