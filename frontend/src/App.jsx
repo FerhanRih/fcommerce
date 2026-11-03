@@ -55,7 +55,7 @@ function App() {
     return userId ? `fcommerce_wishlist_${userId}` : null;
   };
 
- const [wishlist, setWishlist] = useState(() => {
+  const [wishlist, setWishlist] = useState(() => {
     try {
       const key = getWishlistKey();
       if (!key) return []; // Empty if not signed in
@@ -68,22 +68,9 @@ function App() {
 
   const [currentView, setCurrentView] = useState('main'); // 'main' | 'admin' | 'store'
 
-  // Super Admin Control Panel Guard
-  if (currentUser?.role === 'superadmin' || currentUser?.role === 'admin' || currentView === 'admin') {
-    return (
-      <SuperAdminDashboard 
-        currentUser={currentUser} 
-        onLogout={() => {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          setCurrentUser(null);
-          setCurrentView('main');
-        }} 
-        onBackToMain={() => setCurrentView('main')}
-      />
-    );
-  }
-
+  // ==========================================
+  // ALL useEffect HOOKS (Unconditional Order)
+  // ==========================================
   useEffect(() => {
     // 1. Register the Service Worker in the background
     if ('serviceWorker' in navigator) {
@@ -129,16 +116,16 @@ function App() {
     return () => clearInterval(interval);
   }, []);
 
-// 3. Auto-save Cart whenever it changes
-useEffect(() => {
-  try {
-    localStorage.setItem('fcommerce_cart', JSON.stringify(cart));
-  } catch (err) {
-    console.error('Error saving cart:', err);
-  }
-}, [cart]);
+  // 3. Auto-save Cart whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('fcommerce_cart', JSON.stringify(cart));
+    } catch (err) {
+      console.error('Error saving cart:', err);
+    }
+  }, [cart]);
 
-useEffect(() => {
+  useEffect(() => {
     try {
       const key = getWishlistKey();
       if (key) {
@@ -219,6 +206,23 @@ useEffect(() => {
     syncUserAndStore();
   }, []);
 
+  
+  if (currentUser?.role === 'superadmin' || currentUser?.role === 'admin' || currentView === 'admin') {
+    return (
+      <SuperAdminDashboard 
+        currentUser={currentUser} 
+        onLogout={() => {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          localStorage.removeItem('store');
+          setCurrentUser(null);
+          setCurrentStore(null);
+          setCurrentView('main');
+        }} 
+        onBackToMain={() => setCurrentView('main')}
+      />
+    );
+  }
   // Wishlist Toggle Handler
   const handleToggleWishlist = (product) => {
     setWishlist((prev) => {
