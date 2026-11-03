@@ -33,13 +33,14 @@ const SuperAdminOverview = () => {
       setError(null);
       const token = localStorage.getItem('token');
 
-      const response = await fetch('http://localhost:5000/api/admin/dashboard-stats', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+const response = await fetch(`${API_URL}/api/admin/dashboard-stats`, {
+  headers: {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  }
+});
       const data = await response.json();
       if (data.success) {
         setStats(data.stats);
