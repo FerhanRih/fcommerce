@@ -11,9 +11,7 @@ const sequelize = new Sequelize(
     logging: false,
     dialectOptions: {
       ssl: {
-        rejectUnauthorized: false,
-        // Ensures Aiven's ssl-mode=REQUIRED is respected
-        require: true
+        rejectUnauthorized: false
       }
     },
     pool: {
