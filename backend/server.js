@@ -159,7 +159,24 @@ sequelize
   .then(async () => {
     console.log('✅ Database connected & models synced.');
 
-    // Run it once on startup (you can comment this line out after the first deploy)
+    // Run order expiration check only AFTER successful DB connection
+    setInterval(async () => {
+      try {
+        await Order.update(
+          { status: 'expired' },
+          {
+            where: {
+              status: 'pending_merchant',
+              expiresAt: { [Op.lt]: new Date() },
+            },
+          }
+        );
+      } catch (err) {
+        console.error('Error auto-expiring orders:', err);
+      }
+    }, 60 * 1000);
+
+    // Run it once on startup
     await makeSuperAdmin();
 
     app.listen(PORT, () => {

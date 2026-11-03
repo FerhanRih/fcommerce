@@ -87,7 +87,8 @@ function App() {
     // 2. Poll/Check for new broadcast notifications every 5 seconds
     const interval = setInterval(async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/admin/broadcast-client');
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const res = await fetch(`${API_URL}/api/admin/broadcast-client`);
         const data = await res.json();
 
         if (data.success && data.broadcasts && data.broadcasts.length > 0) {
