@@ -7,12 +7,12 @@ import API, { API_URL } from '../services/api'; // Adjust path if needed
 // Default fallback banners when database has no uploaded banners
 const defaultBannerAds = [
   {
-    id: 'default-1',
-    title: 'Escrow Protected Bulk Orders',
-    subtitle: 'Trade steel, electronics, and wholesale goods with guaranteed payment protection.',
-    cta: 'EXPLORE B2B CATALOG',
-    tag: 'VERIFIED SUPPLIERS',
-    imageUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1200&auto=format&fit=crop&q=80',
+   id: 'default-1',
+    title: 'Authentic Cosmetics & Beauty Supplies',
+    subtitle: 'Source skincare, makeup, and hair care products in bulk directly from verified brand distributors.',
+    cta: 'EXPLORE BEAUTY CATALOG',
+    tag: 'VERIFIED BEAUTY SUPPLIERS',
+    imageUrl: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1200&auto=format&fit=crop&q=80',
     linkUrl: '/catalog'
   },
   {
