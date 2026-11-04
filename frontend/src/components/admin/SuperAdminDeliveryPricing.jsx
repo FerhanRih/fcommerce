@@ -1,6 +1,7 @@
 // frontend/src/components/admin/SuperAdminDeliveryPricing.jsx
 import React, { useState, useEffect } from 'react';
 import { Truck, Save, CheckCircle2, ArrowLeft } from 'lucide-react';
+ import API from '../../services/api';
 
 export default function SuperAdminDeliveryPricing({ onBack }) {
   const [fees, setFees] = useState({});
@@ -10,8 +11,9 @@ export default function SuperAdminDeliveryPricing({ onBack }) {
 
   const fetchFees = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/settings/delivery-fees');
-      const data = await res.json();
+     
+const response = await API.get('/settings/delivery-fees');
+const data = response.data;
       if (data.success) {
         setFees(data.fees);
       }
@@ -36,15 +38,8 @@ export default function SuperAdminDeliveryPricing({ onBack }) {
     const token = localStorage.getItem('token');
 
     try {
-      const res = await fetch('http://localhost:5000/api/settings/delivery-fees', {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ fees })
-      });
-      const data = await res.json();
+    const response = await API.put('/settings/delivery-fees', { fees });
+const data = response.data;
       if (data.success) {
         setToast('Delivery price list updated successfully!');
         setTimeout(() => setToast(''), 3000);

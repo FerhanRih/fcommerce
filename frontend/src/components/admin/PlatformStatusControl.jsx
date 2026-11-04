@@ -1,6 +1,7 @@
 // frontend/src/components/admin/PlatformStatusControl.jsx
 import React, { useState, useEffect } from 'react';
 import { ShieldAlert, CheckCircle2, Power } from 'lucide-react';
+import API from '../../services/api';
 
 export default function PlatformStatusControl() {
   const [storefrontOpen, setStorefrontOpen] = useState(true);
@@ -9,12 +10,13 @@ export default function PlatformStatusControl() {
 
   // Fetch current status on mount
   useEffect(() => {
-    fetch('http://localhost:5000/api/settings/platform-status')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setStorefrontOpen(data.storefrontOpen);
-      })
-      .catch(err => console.error('Failed to fetch platform status:', err));
+    
+API.get('/settings/platform-status')
+  .then(response => {
+    if (response.data.success) setStorefrontOpen(response.data.storefrontOpen);
+  })
+  .catch(err => console.error(err));
+      
   }, []);
 
   const handleToggle = async (newStatus) => {
@@ -22,15 +24,10 @@ export default function PlatformStatusControl() {
     setStatusMsg('');
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/api/settings/platform-status', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ storefrontOpen: newStatus })
-      });
-      const data = await res.json();
+      const response = await API.put('/settings/platform-status', {
+  storefrontOpen: newStatus
+});
+const data = response.data;
       if (data.success) {
         setStorefrontOpen(data.storefrontOpen);
         setStatusMsg(data.message);

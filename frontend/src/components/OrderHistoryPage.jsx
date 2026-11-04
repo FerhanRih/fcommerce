@@ -1,6 +1,7 @@
 // frontend/src/components/OrderHistoryPage.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import API from '../services/api';
 
 export default function OrderHistoryPage({ currentUser, onBackToMarketplace }) {
   const [historyOrders, setHistoryOrders] = useState([]);
@@ -11,9 +12,8 @@ export default function OrderHistoryPage({ currentUser, onBackToMarketplace }) {
       if (!currentUser?.phone) return;
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get(`http://localhost:5000/api/orders/user/${currentUser.phone}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+const response = await API.get(`/orders/user/${currentUser.phone}`);
+const data = response.data;
         if (response.data.success) {
           // Filter only delivered orders
           const delivered = (response.data.orders || []).filter(o => o.status === 'delivered');

@@ -1,6 +1,7 @@
 // frontend/src/components/UserSettingsPage.jsx
 import React, { useState } from 'react';
 import axios from 'axios';
+   import API from '../services/api';
 
 export default function UserSettingsPage({ currentUser, onUserUpdated, onBackToMarketplace }) {
   const [name, setName] = useState(currentUser?.name || '');
@@ -19,17 +20,14 @@ export default function UserSettingsPage({ currentUser, onUserUpdated, onBackToM
 
     const token = localStorage.getItem('token');
     try {
-      const response = await axios.put(
-            'http://localhost:5000/api/auth/profile',
-        {
-          name,
-          phone,
-          currentPassword: currentPassword || undefined,
-          newPassword: newPassword || undefined,
-          preferences: customPreferences,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+const response = await API.put('/auth/profile', {
+  name,
+  phone,
+  currentPassword: currentPassword || undefined,
+  newPassword: newPassword || undefined,
+  preferences: customPreferences,
+});
+const data = response.data;
 
       if (response.data.success) {
         setStatusMsg({ type: 'success', text: '✓ Account settings & database updated successfully!' });

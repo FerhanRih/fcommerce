@@ -1,6 +1,7 @@
 // frontend/src/components/UserAdHubModal.jsx
 import React, { useState, useEffect } from 'react';
 import { Megaphone, Upload, CheckCircle2, XCircle, Clock, ShieldCheck, Plus, ArrowLeft } from 'lucide-react';
+import API from '../services/api';
 
 const PACKAGES = [
   { id: 1, name: '3-Day Flash Spotlight', days: 3, price: 1500 },
@@ -31,22 +32,24 @@ export default function UserAdHubModal({ onClose }) {
 
   const fetchMyData = async () => {
     try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      const [bannersRes, accountsRes] = await Promise.all([
-        fetch('http://localhost:5000/api/banners/my-campaigns', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch('http://localhost:5000/api/admin/payment-accounts')
-      ]);
-      const bannersData = await bannersRes.json();
-      const accountsData = await accountsRes.json();
-      
-      if (Array.isArray(bannersData)) setMyBanners(bannersData);
-      if (accountsData.success) setPaymentAccounts(accountsData.accounts || []);
-    } catch (err) {
-      console.error('Error fetching user campaigns:', err);
-    } finally {
-      setLoading(false);
-    }
+  setLoading(true);
+  
+  // Both requests run in parallel with automatic token injection and base URL handling
+  const [bannersRes, accountsRes] = await Promise.all([
+    API.get('/banners/my-campaigns'),
+    API.get('/admin/payment-accounts')
+  ]);
+  
+  const bannersData = bannersRes.data;
+  const accountsData = accountsRes.data;
+  
+  if (Array.isArray(bannersData)) setMyBanners(bannersData);
+  if (accountsData.success) setPaymentAccounts(accountsData.accounts || []);
+} catch (err) {
+  console.error('Error fetching user campaigns:', err);
+} finally {
+  setLoading(false);
+}
   };
 
   useEffect(() => {
@@ -73,12 +76,9 @@ export default function UserAdHubModal({ onClose }) {
     formData.append('receipt', receiptFile);
 
     try {
-      const res = await fetch('http://localhost:5000/api/banners/submit', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-        body: formData
-      });
-      const data = await res.json();
+     
+const response = await API.post('/banners/submit', formData);
+const data = response.data;
       if (res.ok) {
         showToast('Ad campaign request submitted successfully!');
         setTitle('');

@@ -1,5 +1,6 @@
 // frontend/src/components/ProductCard.jsx
 import React, { useState, useEffect } from 'react';
+import { API_URL } from '../services/api';
 
 const ProductCard = ({ product, onSelectProduct, onToggleWishlist, isWishlisted = false }) => {
   const stockCount = product?.stock !== undefined ? Number(product.stock) : 0;
@@ -26,13 +27,11 @@ const ProductCard = ({ product, onSelectProduct, onToggleWishlist, isWishlisted 
     }
   }, [product?.id]);
 
-  // Format image URL for relative backend paths (/uploads/...)
   const getFormattedImageUrl = (url) => {
-    if (!url) return null;
-    if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    return `http://localhost:5000${url.startsWith('/') ? '' : '/'}${url}`;
-  };
-
+  if (!url) return null;
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return `${API_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+};
   const finalImageUrl = getFormattedImageUrl(product?.imageUrl);
 
   return (

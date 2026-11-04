@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Megaphone, CheckCircle2, XCircle, RefreshCw, DollarSign, Clock, Check, X, Eye, Plus, Trash2, Edit3, ShieldCheck 
 } from 'lucide-react';
+import API from '../../services/api';
 
 const SuperAdminAdBanners = () => {
   const [banners, setBanners] = useState([]);
@@ -33,10 +34,9 @@ const SuperAdminAdBanners = () => {
   const fetchBanners = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/admin/ad-banners', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
+      
+const response = await API.get('/admin/ad-banners');
+const data = response.data;
       if (data.success) {
         const fetchedBanners = data.banners || [];
         const pendingCount = fetchedBanners.filter(b => b.status === 'pending').length;
@@ -63,10 +63,12 @@ const SuperAdminAdBanners = () => {
 
   const fetchPaymentAccounts = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/admin/payment-accounts');
-      const data = await res.json();
-      if (data.success) setPaymentAccounts(data.accounts || []);
-    } catch (err) { console.error(err); }
+  const response = await API.get('/admin/payment-accounts');
+  const data = response.data;
+  if (data.success) setPaymentAccounts(data.accounts || []);
+} catch (err) { 
+  console.error(err); 
+}
   };
 
   useEffect(() => {
@@ -82,12 +84,11 @@ const SuperAdminAdBanners = () => {
   const handleBannerAction = async (bannerId, action, extraBody = {}) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/admin/ad-banners/${bannerId}`, {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, ...extraBody })
-      });
-      const data = await response.json();
+     const response = await API.put(`/admin/ad-banners/${bannerId}`, {
+  action,
+  ...extraBody
+});
+const data = response.data;
       if (data.success) {
         showToast(`Banner campaign ${action}d successfully!`);
         fetchBanners();
@@ -112,12 +113,8 @@ const SuperAdminAdBanners = () => {
     if (newAd.imageFile) formData.append('image', newAd.imageFile);
 
     try {
-      const res = await fetch('http://localhost:5000/api/admin/ad-banners/create', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-        body: formData
-      });
-      const data = await res.json();
+      const response = await API.post('/admin/ad-banners/create', formData);
+const data = response.data;
       if (data.success) {
         showToast('House ad published successfully!');
         setShowCreateModal(false);
@@ -131,12 +128,8 @@ const SuperAdminAdBanners = () => {
     e.preventDefault();
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:5000/api/admin/payment-accounts', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(accountForm)
-      });
-      const data = await res.json();
+      const response = await API.post('/admin/payment-accounts', accountForm);
+const data = response.data;
       if (data.success) {
         showToast('Payment account saved!');
         setShowAccountModal(false);

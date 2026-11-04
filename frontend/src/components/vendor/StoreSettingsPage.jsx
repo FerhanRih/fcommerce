@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import API from '../../services/api';
 
 export default function StoreSettingsPage({ currentStore, currentUser, onStoreUpdated, onBack }) {
   const [name, setName] = useState(currentStore?.name || '');
@@ -16,15 +17,16 @@ export default function StoreSettingsPage({ currentStore, currentUser, onStoreUp
     setLoading(true);
     setStatusMsg({ type: '', text: '' });
 
-    try {
-      const response = await axios.put('http://localhost:5000/api/stores/profile', {
-        userId: currentUser?.id,
-        name,
-        address,
-        phoneNumber,
-        logoUrl,
-        landmark,
-      });
+    try {    
+const response = await API.put('/stores/profile', {
+  userId: currentUser?.id,
+  name,
+  address,
+  phoneNumber,
+  logoUrl,
+  landmark,
+});
+const data = response.data;
 
       if (response.data.success) {
         setStatusMsg({ type: 'success', text: '✓ Store settings updated successfully!' });

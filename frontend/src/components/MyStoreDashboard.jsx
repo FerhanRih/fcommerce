@@ -4,7 +4,7 @@ import axios from 'axios';
 import OrdersTab from './vendor/OrdersTab';
 import BankSettingsTab from "./vendor/BankSettingsTab";
 import StoreSettingsPage from './vendor/StoreSettingsPage';
-
+ import API from '../services/api';
 
 export default function MyStoreDashboard({ currentStore, currentUser, onOpenCreateStore, onBackToMain, onLogout, onStoreUpdated }) {
   
@@ -46,15 +46,15 @@ export default function MyStoreDashboard({ currentStore, currentUser, onOpenCrea
     if (!currentStore?.id) return;
     setLoadingProducts(true);
     try {
-      const response = await axios.get(`/api/products?storeId=${currentStore.id}`);
-      if (response.data.success) {
-        setProducts(response.data.products || response.data.data || []);
-      }
-    } catch (err) {
-      console.error('Error fetching store products:', err);
-    } finally {
-      setLoadingProducts(false);
-    }
+  const response = await API.get(`/products?storeId=${currentStore.id}`);
+  if (response.data.success) {
+    setProducts(response.data.products || response.data.data || []);
+  }
+} catch (err) {
+  console.error('Error fetching store products:', err);
+} finally {
+  setLoadingProducts(false);
+}
   };
 
   useEffect(() => {
@@ -69,23 +69,17 @@ export default function MyStoreDashboard({ currentStore, currentUser, onOpenCrea
 
  
 
-  // Handle Store Profile Image Upload
   const handleProfileImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file || !currentStore?.id) return;
 
     setUploadingImage(true);
-    const token = localStorage.getItem('token');
     const formData = new FormData();
     formData.append('image', file);
 
     try {
-      const response = await axios.put(`/api/stores/${currentStore.id}/profile-image`, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      // Centralized API instance adds the Bearer token and baseURL automatically
+      const response = await API.put(`/stores/${currentStore.id}/profile-image`, formData);
 
       if (response.data.success) {
         setStoreImage(response.data.imageUrl);
@@ -126,15 +120,8 @@ const handleUpdateProduct = async (e) => {
       if (editImageFile) {
         formData.append('image', editImageFile);
       }
-
-      // Explicitly target port 5000 to bypass proxy/port confusion
-      const response = await axios.put(`http://localhost:5000/api/products/${editingProduct.id}`, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
+const response = await API.put(`/products/${editingProduct.id}`, formData);
+const data = response.data;
       if (response.data.success) {
         setEditingProduct(null);
         fetchStoreProducts(); // Refresh inventory list
@@ -150,10 +137,8 @@ useEffect(() => {
   const checkStoreStatus = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/api/stores/my-store', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
+      const response = await API.get('/stores/my-store');
+const data = response.data;
       
       if (data.success && data.store) {
         const currentStatus = data.store.status;
@@ -193,9 +178,8 @@ useEffect(() => {
 
     const token = localStorage.getItem('token');
     try {
-      const response = await axios.delete(`http://localhost:5000/api/products/${productId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await API.delete(`/products/${productId}`);
+const data = response.data;
 
       if (response.data.success) {
         fetchStoreProducts(); // Refresh catalog
@@ -209,70 +193,64 @@ useEffect(() => {
   };
   // Submit New Product
   const handleCreateProduct = async (e) => {
-    e.preventDefault();
-    setFormError('');
+  e.preventDefault();
+  setFormError('');
 
-    if (!title || !price || !stock) {
-      setFormError('Please fill in all required product fields.');
-      return;
+  if (!title || !price || !stock) {
+    setFormError('Please fill in all required product fields.');
+    return;
+  }
+
+  if (!currentStore?.id) {
+    setFormError('Store reference missing. Please re-select your store.');
+    return;
+  }
+
+  setFormLoading(true);
+  
+  const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const userPhone = storedUser?.phone || currentStore?.phoneNumber || '';
+
+  try {
+    const formData = new FormData();
+    formData.append('title', title.trim());
+    formData.append('price', Number(price));
+    formData.append('stock', Number(stock));
+    formData.append('category', category);
+    formData.append('storeId', currentStore.id);
+    formData.append('storeName', currentStore.name || 'Boutique Store');
+    formData.append('phoneNumber', userPhone);
+    formData.append('description', description.trim());
+    formData.append('minOrderQty', Number(minOrderQty));
+    if (imageFile) {
+      formData.append('image', imageFile);
     }
 
-    if (!currentStore?.id) {
-      setFormError('Store reference missing. Please re-select your store.');
-      return;
+    const response = await API.post('/products', formData);
+
+    if (response.data.success) {
+      setTitle('');
+      setPrice('');
+      setStock('');
+      setMinOrderQty(1);
+      setDescription('');
+      setImageFile(null);
+      setIsAddModalOpen(false);
+      fetchStoreProducts(); // Refresh inventory list
     }
+  } catch (err) {
+    console.error('Product Creation Error:', err.response || err);
+    setFormError(err.response?.data?.message || 'Failed to add product.');
+  } finally {
+    setFormLoading(false);
+  }
+};
 
-    setFormLoading(true);
-    const token = localStorage.getItem('token');
-    
-    const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
-    const userPhone = storedUser?.phone || currentStore?.phoneNumber || '';
-
-    try {
-      const formData = new FormData();
-      formData.append('title', title.trim());
-      formData.append('price', Number(price));
-      formData.append('stock', Number(stock));
-      formData.append('category', category);
-      formData.append('storeId', currentStore.id);
-      formData.append('storeName', currentStore.name || 'Boutique Store');
-      formData.append('phoneNumber', userPhone);
-      formData.append('description', description.trim()); // Added description
-      formData.append('minOrderQty', Number(minOrderQty));
-      if (imageFile) {
-        formData.append('image', imageFile);
-      }
-
-      const response = await axios.post('/api/products', formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      if (response.data.success) {
-        setTitle('');
-        setPrice('');
-        setStock('');
-        setMinOrderQty(1);
-        setDescription(''); // Reset description
-        setImageFile(null);
-        setIsAddModalOpen(false);
-        fetchStoreProducts(); // Refresh inventory list
-      }
-    } catch (err) {
-      console.error('Product Creation Error:', err.response || err);
-      setFormError(err.response?.data?.message || 'Failed to add product.');
-    } finally {
-      setFormLoading(false);
-    }
-  };
-
-  const getFormattedImageUrl = (url) => {
-    if (!url) return null;
-    if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    return `http://localhost:5000${url.startsWith('/') ? '' : '/'}${url}`;
-  };
+ const getFormattedImageUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return `${API_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+};
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col font-sans">

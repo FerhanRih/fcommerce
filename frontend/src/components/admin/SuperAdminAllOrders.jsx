@@ -4,6 +4,7 @@ import {
   ListOrdered, Search, Calendar, RefreshCw, Eye, 
   Store, User, ShoppingCart, CheckCircle2 
 } from 'lucide-react';
+import API from '../../services/api';
 
 const SuperAdminAllOrders = () => {
   const [orders, setOrders] = useState([]);
@@ -25,10 +26,8 @@ const SuperAdminAllOrders = () => {
       if (nameQuery) params.append('search', nameQuery);
       if (selectedDate) params.append('date', selectedDate);
 
-      const response = await fetch(`http://localhost:5000/api/admin/all-orders?${params.toString()}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
+const response = await API.get(`/admin/all-orders?${params.toString()}`);
+const data = response.data;
       if (data.success) {
         setOrders(data.orders || []);
       }

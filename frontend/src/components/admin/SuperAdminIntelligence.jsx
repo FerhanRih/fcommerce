@@ -1,6 +1,7 @@
 // frontend/src/components/admin/SuperAdminIntelligence.jsx
 import React, { useState, useEffect } from 'react';
 import { Award, Store, User, Package, RefreshCw, TrendingUp } from 'lucide-react';
+import API from '../../services/api';
 
 const SuperAdminIntelligence = () => {
   const [intelligence, setIntelligence] = useState(null);
@@ -10,10 +11,9 @@ const SuperAdminIntelligence = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/admin/marketplace-intelligence', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
+     
+const response = await API.get('/admin/marketplace-intelligence');
+const data = response.data;
       if (data.success) {
         setIntelligence(data.intelligence);
       }

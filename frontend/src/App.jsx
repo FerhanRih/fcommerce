@@ -71,7 +71,7 @@ function App() {
   // ==========================================
   // ALL useEffect HOOKS (Unconditional Order)
   // ==========================================
-  useEffect(() => {
+useEffect(() => {
     // 1. Register the Service Worker in the background
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker
@@ -87,9 +87,8 @@ function App() {
     // 2. Poll/Check for new broadcast notifications every 5 seconds
     const interval = setInterval(async () => {
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-const res = await fetch(`${API_URL}/api/admin/broadcast-client`);
-        const data = await res.json();
+        const response = await API.get('/admin/broadcast-client');
+        const data = response.data;
 
         if (data.success && data.broadcasts && data.broadcasts.length > 0) {
           const latestBroadcast = data.broadcasts[0];
@@ -116,7 +115,6 @@ const res = await fetch(`${API_URL}/api/admin/broadcast-client`);
 
     return () => clearInterval(interval);
   }, []);
-
   // 3. Auto-save Cart whenever it changes
   useEffect(() => {
     try {
@@ -183,9 +181,8 @@ const res = await fetch(`${API_URL}/api/admin/broadcast-client`);
       if (!token) return;
 
       try {
-        const response = await axios.get('/api/stores/my-store', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const response = await API.get('/stores/my-store');
+const data = response.data;
 
         if (response.data.success && response.data.store) {
           const userStore = response.data.store;

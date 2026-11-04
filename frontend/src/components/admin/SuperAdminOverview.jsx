@@ -5,6 +5,7 @@ import {
   BarChart3, RefreshCw, Megaphone, ShieldAlert, CreditCard, Truck 
 } from 'lucide-react';
 import PlatformStatusControl from './PlatformStatusControl';
+import API from '../../services/api'; // Adjust path if needed
 
 const SuperAdminOverview = () => {
   const [stats, setStats] = useState({
@@ -31,17 +32,10 @@ const SuperAdminOverview = () => {
     try {
       setLoading(true);
       setError(null);
-      const token = localStorage.getItem('token');
 
-     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const response = await API.get('/admin/dashboard-stats');
+      const data = response.data;
 
-const response = await fetch(`${API_URL}/api/admin/dashboard-stats`, {
-  headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
-  }
-});
-      const data = await response.json();
       if (data.success) {
         setStats(data.stats);
       } else {

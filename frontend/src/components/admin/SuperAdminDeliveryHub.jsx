@@ -5,6 +5,7 @@ import {
   CheckCircle2, Navigation, Lock, ShieldCheck, Package, Settings 
 } from 'lucide-react';
 import SuperAdminDeliveryPricing from './SuperAdminDeliveryPricing';
+import API from '../../services/api';
 
 const SuperAdminDeliveryHub = () => {
   const [orders, setOrders] = useState([]);
@@ -52,10 +53,9 @@ const SuperAdminDeliveryHub = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/admin/delivery-orders?deliveryStatus=${filter}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
+      
+const response = await API.get(`/admin/delivery-orders?deliveryStatus=${filter}`);
+const data = response.data;
       if (data.success) {
         const fetchedOrders = data.orders || [];
         setOrders(fetchedOrders);
@@ -79,15 +79,11 @@ const SuperAdminDeliveryHub = () => {
   const updateStatus = async (orderId, newStatus, pin = null) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/admin/delivery-orders/${orderId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ status: newStatus, pin })
-      });
-      const data = await response.json();
+    const response = await API.put(`/admin/delivery-orders/${orderId}/status`, {
+  status: newStatus,
+  pin
+});
+const data = response.data;
       if (data.success) {
         showToast(`Order #${orderId} marked as ${newStatus.toUpperCase()}!`);
         

@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import UserAdHubModal from './UserAdHubModal';
+import API, { API_URL } from '../services/api'; // Adjust path if needed
 
 // Default fallback banners when database has no uploaded banners
 const defaultBannerAds = [
@@ -32,15 +33,17 @@ const AdBanner = ({ onPromoteAdClick, onNavigate }) => {
 
   // Fetch active banners from backend
   useEffect(() => {
-    axios.get('http://localhost:5000/api/banners')
-      .then((res) => {
-        if (res.data && res.data.length > 0) {
-          const formattedBanners = res.data.map((banner) => ({
-            ...banner,
-            imageUrl: banner.imageUrl.startsWith('http')
-              ? banner.imageUrl
-              : `http://localhost:5000${banner.imageUrl}`
-          }));
+ 
+API.get('/banners')
+  .then((res) => {
+    const data = res.data.banners || res.data; // Handles both array or object wraps
+    if (data && data.length > 0) {
+      const formattedBanners = data.map((banner) => ({
+        ...banner,
+        imageUrl: banner.imageUrl.startsWith('http')
+          ? banner.imageUrl
+          : `${API_URL}${banner.imageUrl}`
+      }));
           setBanners(formattedBanners);
         }
       })

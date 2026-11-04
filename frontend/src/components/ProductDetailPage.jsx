@@ -1,6 +1,7 @@
 // frontend/src/components/ProductDetailPage.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+ import API from '../services/api';
 
 export default function ProductDetailPage({
   product,
@@ -63,20 +64,18 @@ const totalReviewsCount = reviews.length > 0 ? reviews.length : (product.reviews
 
     // Fetch from backend API silently without console noise
     const fetchReviews = async () => {
-      try {
-        const res = await fetch(`http://localhost:5000/api/reviews/product/${product.id}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success && Array.isArray(data.reviews) && data.reviews.length > 0) {
-            setReviews(data.reviews);
-            localStorage.setItem(`fcommerce_reviews_${product.id}`, JSON.stringify(data.reviews));
-          }
-        }
-      } catch (err) {
-        // Handled silently
-      } finally {
-        setLoadingReviews(false);
-      }
+try {
+  const response = await API.get('/products');
+const data = response.data;
+  if (data.success && Array.isArray(data.reviews) && data.reviews.length > 0) {
+    setReviews(data.reviews);
+    localStorage.setItem(`fcommerce_reviews_${product.id}`, JSON.stringify(data.reviews));
+  }
+} catch (err) {
+  // Handled silently
+} finally {
+  setLoadingReviews(false);
+}
     };
 
     fetchReviews();
@@ -119,10 +118,10 @@ const totalReviewsCount = reviews.length > 0 ? reviews.length : (product.reviews
     fetchCrossSellData();
   }, [product]);
   const getFormattedImageUrl = (url) => {
-    if (!url) return null;
-    if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    return `http://localhost:5000${url.startsWith('/') ? '' : '/'}${url}`;
-  };
+  if (!url) return null;
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return `${API_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+};
 
   const handleQuantityChange = (newVal) => {
     const val = parseInt(newVal) || minQty;
@@ -188,22 +187,18 @@ const totalReviewsCount = reviews.length > 0 ? reviews.length : (product.reviews
   setTimeout(() => setReviewSuccess(false), 3000);
 
   // Send to backend API
-  try {
-    const token = localStorage.getItem('token');
-    await axios.post(
-      'http://localhost:5000/api/reviews',
-      { 
-        productId: product.id, 
-        rating: newRating, 
-        comment: newComment.trim(),
-        user: realUserName,
-        date: exactFormattedDate
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-  } catch (err) {
-    // Silent catch so local cache works even if backend endpoint isn't listening
-  }
+try {
+  // Centralized API instance automatically attaches the Bearer token from localStorage
+  await API.post('/reviews', { 
+    productId: product.id, 
+    rating: newRating, 
+    comment: newComment.trim(), 
+    user: realUserName, 
+    date: exactFormattedDate 
+  });
+} catch (err) {
+  // Silent catch
+}
 };
   return (
     <div className="min-h-screen bg-slate-50 pb-28">

@@ -1,6 +1,7 @@
 // frontend/src/components/common/UserSettings.jsx
 import React, { useState } from 'react';
 import { Lock, CheckCircle2, ShieldCheck } from 'lucide-react';
+import API from '../../services/api';
 
 const UserSettings = () => {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -23,16 +24,9 @@ const UserSettings = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/auth/update-password', {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ currentPassword, newPassword })
-      });
-
-      const data = await response.json();
+      const response = await API.put('/auth/update-password', { currentPassword, newPassword });
+      const data = response.data;
+      
       if (data.success) {
         setMessage('Password updated successfully!');
         setCurrentPassword('');

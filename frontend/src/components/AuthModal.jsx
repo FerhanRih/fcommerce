@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { Phone, Lock, User, MapPin, X, Loader2, ArrowRight, CheckCircle2 } from 'lucide-react';
+   import API from '../services/api';
 
 // Make sure API request goes to backend port (e.g., 5000), not Vite frontend port (5173)
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
@@ -31,9 +32,10 @@ const AuthModal = ({ isOpen, onClose, onAuthSuccess }) => {
     try {
       setLoading(true);
       // Backend checks if user exists and sends OTP
-      const response = await axios.post(`${API_BASE_URL}/api/auth/request-otp`, { 
-        phone: cleanPhone 
-      });
+      const response = await API.post('/auth/request-otp', { 
+  phone: cleanPhone 
+});
+const data = response.data;
 
       if (response.data.isRegistered) {
         // User exists -> Ask for OTP
@@ -58,11 +60,11 @@ const AuthModal = ({ isOpen, onClose, onAuthSuccess }) => {
 
     try {
       setLoading(true);
-      const response = await axios.post(`${API_BASE_URL}/api/auth/verify-otp`, {
-        phone: phone.trim(),
-        otp: otp.trim(),
-      });
-
+     const response = await API.post('/auth/verify-otp', {
+  phone: phone.trim(),
+  otp: otp.trim(),
+});
+const data = response.data;
       if (response.data.token) {
         completeAuth(response.data.user, response.data.token);
       }
@@ -85,11 +87,12 @@ const AuthModal = ({ isOpen, onClose, onAuthSuccess }) => {
 
     try {
       setLoading(true);
-      const response = await axios.post(`${API_BASE_URL}/api/auth/register`, {
-        phone: phone.trim(),
-        name: name.trim(),
-        otp: otp.trim(),
-      });
+const response = await API.post('/auth/verify-otp', {
+  phone: phone.trim(),
+  name: name.trim(),
+  otp: otp.trim(),
+});
+const data = response.data;
 
       if (response.data.token) {
         completeAuth(response.data.user, response.data.token);

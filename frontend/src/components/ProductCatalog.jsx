@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import CategoryBar from './CategoryBar';
 import ProductCard from './ProductCard';
+ import API from '../services/api'; // Use '../../services/api' if inside a subfolder
 
 const ProductCatalog = ({ selectedStore, onSelectProduct, wishlist = [], onToggleWishlist }) => {
   const [products, setProducts] = useState([]);
@@ -24,21 +25,20 @@ const ProductCatalog = ({ selectedStore, onSelectProduct, wishlist = [], onToggl
   const [selectedCategory, setSelectedCategory] = useState('all');
 
   useEffect(() => {
-    axios
-      .get('http://localhost:5000/api/products')
-      .then((res) => {
-        if (Array.isArray(res.data.products)) {
-          setProducts(res.data.products);
-        } else if (Array.isArray(res.data)) {
-          setProducts(res.data);
-        }
-      })
-      .catch((err) => {
-        console.error('Error fetching products from database:', err.message);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+API.get('/products')
+  .then((res) => {
+    if (Array.isArray(res.data.products)) {
+      setProducts(res.data.products);
+    } else if (Array.isArray(res.data)) {
+      setProducts(res.data);
+    }
+  })
+  .catch((err) => {
+    console.error('Error fetching products from database:', err.message);
+  })
+  .finally(() => {
+    setLoading(false);
+  });
   }, []);
 
   const slugify = (text) =>
@@ -113,9 +113,9 @@ const ProductCatalog = ({ selectedStore, onSelectProduct, wishlist = [], onToggl
   });
 
   const getFullImageUrl = (url) => {
-    if (!url) return null;
-    return url.startsWith('http') ? url : `http://localhost:5000${url}`;
-  };
+  if (!url) return null;
+  return url.startsWith('http') ? url : `${API_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+};
 
   // -------------------------------------------------------------
   // DRILL-DOWN VIEW: SINGLE STORE FRONT PAGE

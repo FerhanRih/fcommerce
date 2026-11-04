@@ -4,6 +4,7 @@ import {
   Store, User, CheckCircle2, XCircle, 
   Search, ShieldAlert, MapPin, Calendar, Navigation 
 } from 'lucide-react';
+import API from '../../services/api';
 
 const SuperAdminStoreApproval = () => {
   const [stores, setStores] = useState([]);
@@ -49,10 +50,9 @@ const SuperAdminStoreApproval = () => {
   const fetchStores = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/admin/stores?tab=${tab}&search=${encodeURIComponent(searchQuery)}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
+      
+const response = await API.get(`/admin/stores?tab=${tab}&search=${encodeURIComponent(searchQuery)}`);
+const data = response.data;
       if (data.success) {
         const fetchedStores = data.stores || [];
         setStores(fetchedStores);
@@ -79,15 +79,11 @@ const SuperAdminStoreApproval = () => {
   const handleUpdateStatus = async (storeId, newStatus, reason = '') => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/admin/stores/${storeId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ status: newStatus, rejectionReason: reason })
-      });
-      const data = await response.json();
+      const response = await API.put(`/admin/stores/${storeId}/status`, {
+  status: newStatus,
+  rejectionReason: reason
+});
+const data = response.data;
       if (data.success) {
         showToast(`Store successfully ${newStatus.toUpperCase()}!`);
         setStoreToReject(null);

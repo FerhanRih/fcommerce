@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldCheck, UserPlus, RefreshCw, CheckCircle2, Activity, Calendar, Trash2, Edit3 } from 'lucide-react';
+import API from '../../services/api';
 
 const SuperAdminRoles = () => {
   const [staffList, setStaffList] = useState([]);
@@ -26,10 +27,8 @@ const SuperAdminRoles = () => {
       setLoading(true);
       const token = localStorage.getItem('token');
       const query = dateParam ? `?date=${dateParam}` : '';
-      const response = await fetch(`http://localhost:5000/api/admin/staff-users${query}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
+const response = await API.get(`/admin/staff-users${query}`);
+const data = response.data;
       if (data.success) {
         setStaffList(data.staff || []);
         setActivityLogs(data.logs || []);
@@ -56,21 +55,14 @@ const SuperAdminRoles = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/admin/update-role', {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          name: nameInput,
-          phone: phoneInput,
-          password: passwordInput,
-          confirmPassword: confirmPasswordInput,
-          role: selectedRole
-        })
-      });
-      const data = await response.json();
+      const response = await API.put('/admin/update-role', {
+  name: nameInput,
+  phone: phoneInput,
+  password: passwordInput,
+  confirmPassword: confirmPasswordInput,
+  role: selectedRole
+});
+const data = response.data;
       if (data.success) {
         showToast(data.message);
         setNameInput('');
@@ -94,11 +86,8 @@ const SuperAdminRoles = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/admin/staff-users/${userId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
+      const response = await API.delete(`/admin/staff-users/${userId}`);
+const data = response.data;
       if (data.success) {
         showToast('Staff account successfully removed.');
         fetchStaffAndLogs(filterDate);
@@ -114,18 +103,11 @@ const SuperAdminRoles = () => {
   const handleRoleChange = async (userId, newRole) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/admin/update-role', {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userId: userId,
-          role: newRole
-        })
-      });
-      const data = await response.json();
+      const response = await API.put('/admin/update-role', {
+  userId: userId,
+  role: newRole
+});
+const data = response.data;
       if (data.success) {
         showToast('Role updated successfully.');
         fetchStaffAndLogs(filterDate);

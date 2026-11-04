@@ -1,6 +1,7 @@
 // frontend/src/components/CartCheckoutModal.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import API from '../services/api';
 
 // Official Addis Ababa Subcities with default dynamic delivery fees (Admin configurable)
 const ADDIS_SUBCITIES = [
@@ -62,18 +63,16 @@ useEffect(() => {
 
   // 1. Load admin-configured subcity rates
   const fetchDeliveryRates = async () => {
-    try {
-      const res = await fetch('http://localhost:5000/api/settings/delivery-fees');
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.fees) {
-          setSubcityFees(data.fees);
-          return;
-        }
-      }
-    } catch (err) {
-      // Fallback silently to defaults
-    }
+try {
+  const response = await API.get('/settings/delivery-fees');
+  const data = response.data;
+  if (data && data.fees) {
+    setSubcityFees(data.fees);
+    return;
+  }
+} catch (err) {
+  console.error('Error fetching delivery fees:', err);
+}
 
     const defaultMap = {};
     ADDIS_SUBCITIES.forEach((s) => {
@@ -118,14 +117,16 @@ useEffect(() => {
 }, [cartItems, currentUser]); 
 
   useEffect(() => {
-  fetch('http://localhost:5000/api/settings/platform-status')
-    .then(res => res.json())
-    .then(data => {
-      if (data.success && data.storefrontOpen === false) {
-        setPlatformOpen(false);
-      }
-    })
-    .catch(err => console.log('Status check skipped'));
+  API.get('/settings/platform-status')
+  .then(res => {
+    const data = res.data;
+    if (data.success && data.storefrontOpen === false) {
+      setPlatformOpen(false);
+    }
+  })
+  .catch(err => {
+    console.error('Error fetching platform status:', err);
+  });
 }, []);
 // update delivery fee
   useEffect(() => {
@@ -205,26 +206,22 @@ useEffect(() => {
     const token = localStorage.getItem('token');
 
     try {
-      const response = await axios.post(
-        'http://localhost:5000/api/orders/request',
-        {
-          items: activeItems.map((i) => ({
-            id: i.id,
-            title: i.title,
-            price: i.price,
-            quantity: i.selectedQuantity || i.quantity || i.minOrderQty || 1,
-            imageUrl: i.imageUrl,
-            storeId: Number(i.storeId || i.StoreId || 1), // 👈 Ensure storeId is attached per item!
-          })),
-          subtotal,
-          deliveryFee,
-          totalAmount: grandTotal,
-          deliveryAddress: address,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+     const response = await API.post('/orders/request', {
+  items: activeItems.map((i) => ({
+    id: i.id,
+    title: i.title,
+    price: i.price,
+    quantity: i.selectedQuantity || i.quantity || i.minOrderQty || 1,
+    imageUrl: i.imageUrl,
+    storeId: Number(i.storeId || i.StoreId || 1), // 👈 Ensure storeId is attached per item!
+  })),
+  subtotal,
+  deliveryFee,
+  totalAmount: grandTotal,
+  deliveryAddress: address,
+});
+
+const data = response.data;
 
       if (response.data.success) {
         if (onOrderSubmitted) {
@@ -240,11 +237,12 @@ useEffect(() => {
       setSubmitting(false);
     }
   };
+ 
   const getFormattedImageUrl = (url) => {
-    if (!url) return null;
-    if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    return `http://localhost:5000${url.startsWith('/') ? '' : '/'}${url}`;
-  };
+  if (!url) return null;
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return `${API_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+};
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-4 backdrop-blur-xs">

@@ -1,6 +1,7 @@
 // frontend/src/components/TrackOrderPage.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import API from '../services/api';
 
 export default function TrackOrderPage({ currentUser, onBackToMarketplace }) {
   const [orders, setOrders] = useState([]);
@@ -18,9 +19,9 @@ export default function TrackOrderPage({ currentUser, onBackToMarketplace }) {
     if (!token) return;
 
     try {
-      const response = await axios.get(`http://localhost:5000/api/orders/user/${currentUser.phone}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+     
+const response = await API.get(`/orders/user/${currentUser.phone}`);
+const data = response.data;
       if (response.data.success) {
         const fetchedOrders = response.data.orders || [];
 
@@ -87,9 +88,8 @@ export default function TrackOrderPage({ currentUser, onBackToMarketplace }) {
     formData.append('receipt', file);
 
     try {
-      const response = await axios.put(`http://localhost:5000/api/orders/${orderId}/upload-receipt`, formData, {
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' },
-      });
+    const response = await API.put(`/orders/${orderId}/upload-receipt`, formData);
+const data = response.data;
       if (response.data.success) {
         setNotices({ ...notices, [orderId]: '✓ Payment receipt uploaded successfully!' });
         

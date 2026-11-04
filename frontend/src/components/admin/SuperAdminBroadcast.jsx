@@ -1,6 +1,7 @@
 // frontend/src/components/admin/SuperAdminBroadcast.jsx
 import React, { useState } from 'react';
 import { Send, Megaphone, CheckCircle2, Users, Store } from 'lucide-react';
+import API from '../../services/api';
 
 const SuperAdminBroadcast = () => {
   const [message, setMessage] = useState('');
@@ -32,15 +33,9 @@ const SuperAdminBroadcast = () => {
     setSending(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/api/admin/broadcast', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ message, target })
-      });
-      const data = await res.json();
+      
+const response = await API.post('/admin/broadcast', { message });
+const data = response.data;
       if (data.success) {
         showToast('Broadcast notification dispatched successfully!');
         setMessage('');

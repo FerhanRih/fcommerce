@@ -1,6 +1,6 @@
 // frontend/src/components/CreateStoreModal.jsx
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import API from '../services/api';
 import { Store, MapPin, X, Loader2, Navigation, Clock } from 'lucide-react';
 import StoreLocationPicker from './StoreLocationPicker';
 
@@ -81,26 +81,15 @@ const CreateStoreModal = ({ isOpen, onClose, currentUser, token, existingStore, 
     try {
       setLoading(true);
       
-      // 👇 Always use POST /api/stores (our backend controller handles upsert/resubmission)
-      const endpoint = '/api/stores';
-      const method = 'post';
-
-      const response = await axios[method](
-        endpoint,
-        {
-          name: formData.name.trim(),
-          store_name: formData.name.trim(),
-          address: formData.address.trim(),
-          landmark: formData.landmark.trim(),
-          latitude: formData.latitude,
-          longitude: formData.longitude,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${authToken.replace(/^Bearer\s+/i, '')}`,
-          },
-        }
-      );
+      // Using centralized API helper (baseURL handles /api, interceptor injects token)
+      const response = await API.post('/stores', {
+        name: formData.name.trim(),
+        store_name: formData.name.trim(),
+        address: formData.address.trim(),
+        landmark: formData.landmark.trim(),
+        latitude: formData.latitude,
+        longitude: formData.longitude,
+      });
       
       if (response.data.success) {
         const savedStore = response.data.store;

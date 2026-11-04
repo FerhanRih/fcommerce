@@ -4,7 +4,8 @@ import {
   PhoneCall, RefreshCw, CheckCircle2, XCircle, Clock, 
   CreditCard, ShieldCheck, ExternalLink, Copy, AlertTriangle, Eye 
 } from 'lucide-react';
-
+ import API from '../../services/api';
+ 
 const SuperAdminOrderLifecycle = () => {
   const [activeSubTab, setActiveSubTab] = useState('requests'); // 'requests' | 'decision' | 'paid' | 'verified'
   const [orders, setOrders] = useState([]);
@@ -67,10 +68,9 @@ const SuperAdminOrderLifecycle = () => {
     try {
       if (!isSilent) setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/admin/lifecycle-orders?stage=${stage}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
+     
+const response = await API.get(`/admin/lifecycle-orders?stage=${stage}`);
+const data = response.data;
       if (data.success) {
         const fetchedOrders = data.orders || [];
         setOrders(fetchedOrders);

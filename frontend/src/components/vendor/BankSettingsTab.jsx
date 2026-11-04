@@ -1,6 +1,7 @@
 // frontend/src/components/vendor/BankSettingsTab.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import API from '../../services/api';
 
 export default function BankSettingsTab({ currentStore, setActiveStoreTab, onUpdate }) {
   const [bankAccounts, setBankAccounts] = useState([]);
@@ -37,14 +38,9 @@ export default function BankSettingsTab({ currentStore, setActiveStoreTab, onUpd
     setStatusMsg({ type: '', text: '' });
     const newAccounts = [...bankAccounts, { id: Date.now(), bankName, accountNumber, accountHolder }];
     
-    const token = localStorage.getItem('token');
     try {
-      const response = await axios.put(
-        `http://localhost:5000/api/stores/${currentStore.id}`,
-        { bankAccounts: newAccounts },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
+      const response = await API.put(`/stores/${currentStore.id}`, { bankAccounts: newAccounts });
+      
       if (response.data.success) {
         const savedAccounts = response.data.store.bankAccounts;
         const parsed = typeof savedAccounts === 'string' ? JSON.parse(savedAccounts) : savedAccounts;
@@ -70,13 +66,8 @@ export default function BankSettingsTab({ currentStore, setActiveStoreTab, onUpd
     const updatedAccounts = bankAccounts.filter((acc) => acc.id !== id);
     setBankAccounts(updatedAccounts); // Remove from local UI immediately
 
-    const token = localStorage.getItem('token');
     try {
-      const response = await axios.put(
-        `http://localhost:5000/api/stores/${currentStore.id}`,
-        { bankAccounts: updatedAccounts },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const response = await API.put(`/stores/${currentStore.id}`, { bankAccounts: updatedAccounts });
 
       if (response.data.success) {
         const savedAccounts = response.data.store.bankAccounts;
@@ -100,14 +91,9 @@ export default function BankSettingsTab({ currentStore, setActiveStoreTab, onUpd
   const handleSaveAndFinish = async (shouldAcceptOrder = false) => {
     setLoading(true);
     setStatusMsg({ type: '', text: '' });
-    const token = localStorage.getItem('token');
 
     try {
-      const response = await axios.put(
-        `http://localhost:5000/api/stores/${currentStore.id}`,
-        { bankAccounts },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const response = await API.put(`/stores/${currentStore.id}`, { bankAccounts });
 
       if (response.data.success) {
         const savedAccounts = response.data.store.bankAccounts;
@@ -121,11 +107,8 @@ export default function BankSettingsTab({ currentStore, setActiveStoreTab, onUpd
         if (shouldAcceptOrder && pendingOrderId) {
           localStorage.removeItem('pendingOrderIdForAccept');
           
-          await axios.put(
-            `http://localhost:5000/api/orders/${pendingOrderId}/merchant-response`,
-            { action: 'accept' },
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
+          await API.put(`/orders/${pendingOrderId}/merchant-response`, { action: 'accept' });
+          
           setStatusMsg({ type: 'success', text: '✓ Bank accounts saved & order accepted successfully!' });
           
           setTimeout(() => {
@@ -144,7 +127,7 @@ export default function BankSettingsTab({ currentStore, setActiveStoreTab, onUpd
       setLoading(false);
     }
   };
-
+  
   return (
     <div className="space-y-6 max-w-2xl bg-white p-6 rounded-3xl border border-slate-200">
       <div>

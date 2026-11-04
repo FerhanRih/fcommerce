@@ -1,6 +1,7 @@
 // frontend/src/components/OrderStatusPage.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import API from '../services/api';
 
 export default function OrderStatusPage({ orderId, onBackToMarketplace, onTryAnotherStore }) {
   const [order, setOrder] = useState(null);
@@ -13,9 +14,8 @@ export default function OrderStatusPage({ orderId, onBackToMarketplace, onTryAno
   const fetchOrderStatus = async () => {
   const token = localStorage.getItem('token');
   try {
-    const response = await axios.get(`http://localhost:5000/api/orders/${orderId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+const response = await API.get(`/orders/${orderId}`);
+const data = response.data;
     if (response.data.success) {
       setOrder(response.data.order);
       setTimeLeft(response.data.remainingSeconds || 0);
@@ -75,7 +75,7 @@ export default function OrderStatusPage({ orderId, onBackToMarketplace, onTryAno
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const handleUploadReceipt = async (e) => {
+const handleUploadReceipt = async (e) => {
   e.preventDefault();
   if (!receiptFile) {
     setFeedback({ type: 'error', text: 'Please select a payment receipt image first.' });
@@ -84,17 +84,12 @@ export default function OrderStatusPage({ orderId, onBackToMarketplace, onTryAno
 
   setUploading(true);
   setFeedback({ type: '', text: '' });
-  const token = localStorage.getItem('token');
+  
   const formData = new FormData();
   formData.append('receipt', receiptFile);
 
   try {
-    const response = await axios.put(`http://localhost:5000/api/orders/${orderId}/upload-receipt`, formData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await API.put(`/orders/${orderId}/upload-receipt`, formData);
 
     if (response.data.success) {
       setUploadSuccess(true);

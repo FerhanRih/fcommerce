@@ -1,6 +1,7 @@
 // frontend/src/components/vendor/OrdersTab.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import API from '../../services/api';
 
 export default function OrdersTab({ currentStore, setActiveStoreTab }) {
   console.log('🔍 [DEBUG] OrdersTab rendered with currentStore prop:', currentStore);
@@ -13,8 +14,7 @@ export default function OrdersTab({ currentStore, setActiveStoreTab }) {
   const [rejectedItemsMap, setRejectedItemsMap] = useState({});
   const [merchantNote, setMerchantNote] = useState('');
   const [notice, setNotice] = useState('');
-
-  // Keep track of previous orders length/IDs to detect new incoming orders for notifications
+// Keep track of previous orders length/IDs to detect new incoming orders for notifications
   const prevPendingCountRef = useRef(0);
 
   // 1. Fetch store orders
@@ -26,12 +26,10 @@ export default function OrdersTab({ currentStore, setActiveStoreTab }) {
     console.log('🏪 MERCHANT FETCHING -> currentStore.id:', currentStore.id);
     
     setLoading(true);
-    const token = localStorage.getItem('token');
     try {
-      const response = await axios.get(`http://localhost:5000/api/orders/vendor/${currentStore.id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await API.get(`/orders/vendor/${currentStore.id}`);
       console.log('📦 MERCHANT FETCH SUCCESS -> Response data:', response.data);
+      
       if (response.data.success) {
         const fetchedOrders = response.data.orders || [];
         
@@ -56,6 +54,7 @@ export default function OrdersTab({ currentStore, setActiveStoreTab }) {
     }
   };
 
+  // 2. Process Order Request (Accept/Reject)
   const handleProcessOrderRequest = async (orderId, action) => {
     if (action === 'accept') {
       let bankAccounts = currentStore?.bankAccounts;
@@ -77,20 +76,13 @@ export default function OrdersTab({ currentStore, setActiveStoreTab }) {
       }
     }
 
-    const token = localStorage.getItem('token');
     try {
-      const response = await axios.put(
-        `http://localhost:5000/api/orders/${orderId}/merchant-response`,
-        {
-          action,
-          rejectionReason: merchantNote || (action === 'reject' ? 'Order rejected by merchant.' : 'Item unavailable or out of stock'),
-          rejectedItemIds: Object.keys(rejectedItemsMap).filter((id) => rejectedItemsMap[id]),
-          adjustedItems: itemQuantitiesMap,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const response = await API.put(`/orders/${orderId}/merchant-response`, {
+        action,
+        rejectionReason: merchantNote || (action === 'reject' ? 'Order rejected by merchant.' : 'Item unavailable or out of stock'),
+        rejectedItemIds: Object.keys(rejectedItemsMap).filter((id) => rejectedItemsMap[id]),
+        adjustedItems: itemQuantitiesMap,
+      });
 
       if (response.data.success) {
         setNotice(`✓ Order ${action}ed successfully.`);
@@ -125,14 +117,13 @@ export default function OrdersTab({ currentStore, setActiveStoreTab }) {
 
   // 3. Confirm Payment Receipt
   const handleVerifyPayment = async (orderId) => {
-    const token = localStorage.getItem('token');
     try {
-      const response = await axios.put(
-        `http://localhost:5000/api/orders/${orderId}/verify-payment`,
-        { status: 'payment_verified' },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      if (response.data.success) {
+      const paymentResponse = await API.put(`/orders/${orderId}/verify-payment`, { 
+        status: 'payment_verified' 
+      });
+
+      // Fixed: Checked paymentResponse instead of response
+      if (paymentResponse.data.success) {
         setNotice('✓ Payment verified! Order marked for dispatch.');
         setTimeout(() => setNotice(''), 3000);
 
@@ -151,7 +142,7 @@ export default function OrdersTab({ currentStore, setActiveStoreTab }) {
       setNotice('Failed to verify payment.');
     }
   };
-
+  
   useEffect(() => {
     fetchStoreOrders();
     const interval = setInterval(fetchStoreOrders, 10000); // Poll every 10 seconds for real-time updates

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import API from '../services/api';
 
 export default function RegisterModal({ isOpen, onClose, onRegisterSuccess }) {
   const [step, setStep] = useState(1); // Step 1: Check Phone, Step 2: Password / Registration
@@ -37,9 +37,8 @@ export default function RegisterModal({ isOpen, onClose, onRegisterSuccess }) {
     }
 
     setLoading(true);
-
     try {
-      const response = await axios.post('/api/auth/check-phone', { phone: cleanPhone });
+      const response = await API.post('/auth/check-phone', { phone: cleanPhone });
       if (response.data.success) {
         setIsExistingUser(response.data.isExistingUser);
         setStep(2);
@@ -82,12 +81,13 @@ export default function RegisterModal({ isOpen, onClose, onRegisterSuccess }) {
     setLoading(true);
 
     try {
-      const endpoint = isExistingUser ? '/api/auth/login' : '/api/auth/register';
+      // Using relative paths via centralized API helper
+      const endpoint = isExistingUser ? '/auth/login' : '/auth/register';
       const payload = isExistingUser
         ? { phone: cleanPhone, password: cleanPassword }
         : { phone: cleanPhone, name: name.trim(), password: cleanPassword };
 
-      const response = await axios.post(endpoint, payload);
+      const response = await API.post(endpoint, payload);
 
       if (response.data.success) {
         const { token, user, store } = response.data;
