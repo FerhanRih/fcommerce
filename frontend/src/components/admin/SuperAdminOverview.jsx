@@ -5,14 +5,15 @@ import {
   BarChart3, RefreshCw, Megaphone, ShieldAlert, CreditCard, Truck 
 } from 'lucide-react';
 import PlatformStatusControl from './PlatformStatusControl';
-import API from '../../services/api'; // Adjust path if needed
+import API from '../../services/api'; 
 
 const SuperAdminOverview = () => {
-  const [stats, setStats] = useState({
+ const [stats, setStats] = useState({
     totalUsers: 0,
     staffCount: 0,
     totalCustomers: 0,
     totalStores: 0,
+    activeStores: 0, 
     pendingStores: 0,
     adBannerRequests: 0,
     runningAds: 0,
@@ -123,7 +124,7 @@ const SuperAdminOverview = () => {
             </div>
           </div>
         </div>
-
+     
         {/* STORES & APPROVALS */}
         <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
@@ -134,11 +135,11 @@ const SuperAdminOverview = () => {
           </div>
           <div className="mt-4 flex items-baseline justify-between">
             <div>
-              <div className="text-3xl font-black text-[#1E4D58]">{stats.totalStores}</div>
+              <div className="text-3xl font-black text-[#1E4D58]">{stats.activeStores || 0}</div>
               <div className="text-[10px] text-slate-500 font-bold mt-1">Active Stores</div>
             </div>
             <div className="text-right">
-              <div className="text-xl font-black text-amber-600">{stats.pendingStores}</div>
+              <div className="text-xl font-black text-amber-600">{stats.pendingStores || 0}</div>
               <div className="text-[10px] text-amber-600 font-extrabold mt-1">Awaiting Approval</div>
             </div>
           </div>

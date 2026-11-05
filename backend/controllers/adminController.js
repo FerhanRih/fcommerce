@@ -21,13 +21,24 @@ const adminController = {
         where: { role: { [Op.notIn]: ['admin', 'superadmin', 'staff', 'delivery'] } }
       }) : 0;
 
-      const totalStores = Store ? await Store.count() : 0;
-      let pendingStores = 0;
-      try {
-        if (Store) pendingStores = await Store.count({ where: { is_approved: false } });
-      } catch (e) {
-        pendingStores = 0;
-      }
+     const totalStores = Store ? await Store.count() : 0;
+let pendingStores = 0;
+let activeStores = 0;
+
+try {
+  if (Store) {
+    // Count anything marked pending as waiting approval
+    pendingStores = await Store.count({ 
+      where: { status: 'pending' } 
+    });
+    
+    // Everything else is treated as active/approved
+    activeStores = Math.max(0, totalStores - pendingStores);
+  }
+} catch (e) {
+  pendingStores = 0;
+  activeStores = totalStores;
+}
 
       let adBannerRequests = 0;
       let runningAds = 0;
@@ -55,6 +66,7 @@ const adminController = {
           staffCount,
           totalCustomers,
           totalStores,
+          activeStores, // 👈 Explicitly pass active count
           pendingStores,
           adBannerRequests,
           runningAds,
