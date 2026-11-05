@@ -4,7 +4,7 @@ import {
   PhoneCall, RefreshCw, CheckCircle2, XCircle, Clock, 
   CreditCard, ShieldCheck, ExternalLink, Copy, AlertTriangle, Eye 
 } from 'lucide-react';
- import API from '../../services/api';
+import API from '../../services/api';
  
 const SuperAdminOrderLifecycle = () => {
   const [activeSubTab, setActiveSubTab] = useState('requests'); // 'requests' | 'decision' | 'paid' | 'verified'
@@ -67,10 +67,9 @@ const SuperAdminOrderLifecycle = () => {
   const fetchOrders = async (stage, isSilent = false) => {
     try {
       if (!isSilent) setLoading(true);
-      const token = localStorage.getItem('token');
      
-const response = await API.get(`/admin/lifecycle-orders?stage=${stage}`);
-const data = response.data;
+      const response = await API.get(`/admin/lifecycle-orders?stage=${stage}`);
+      const data = response.data;
       if (data.success) {
         const fetchedOrders = data.orders || [];
         setOrders(fetchedOrders);
@@ -207,6 +206,10 @@ const data = response.data;
               const storeName = order.Store?.store_name || order.Store?.name || 'Store';
               const customerName = order.User?.name || 'Customer';
 
+              const orderSubtotal = Number(order.subtotal || 0);
+              const deliveryFee = Number(order.deliveryFee || 0);
+              const totalAmount = Number(order.totalAmount || order.amount || (orderSubtotal + deliveryFee));
+
               return (
                 <div key={order.id} className="border border-slate-200 rounded-2xl p-4 sm:p-5 hover:border-slate-300 transition space-y-4 bg-slate-50/50">
                   
@@ -218,8 +221,13 @@ const data = response.data;
                         {order.status}
                       </span>
                     </div>
-                    <div className="text-sm font-black text-slate-900">
-                      Total: {Number(order.totalAmount || order.amount || 0).toLocaleString()} <span className="text-[10px]">ETB</span>
+                    <div className="text-right">
+                      <div className="text-sm font-black text-slate-900">
+                        Grand Total: {totalAmount.toLocaleString()} <span className="text-[10px]">ETB</span>
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-semibold">
+                        (Products Subtotal: {orderSubtotal.toLocaleString()} + Delivery: {deliveryFee.toLocaleString()})
+                      </div>
                     </div>
                   </div>
 
@@ -258,7 +266,7 @@ const data = response.data;
                       <button
                         onClick={() => handleSendSMS(
                           merchantPhone,
-                          `[FCOMMERCE] New order #${order.id} received for ${storeName}! Please review and accept: https://fcommerce.et/orders/${order.id}`
+                          `[FCOMMERCE] New order #${order.id} received for ${storeName} (Products Subtotal: ${orderSubtotal.toLocaleString()} ETB). Please review and accept: https://fcommerce.et/orders/${order.id}`
                         )}
                         className="w-full sm:w-auto px-4 py-2 bg-[#1E4D58] hover:bg-[#163C45] text-white font-black text-xs rounded-xl flex items-center justify-center space-x-2 transition cursor-pointer shadow-xs"
                       >
@@ -272,7 +280,7 @@ const data = response.data;
                       <button
                         onClick={() => handleSendSMS(
                           customerPhone,
-                          `[FCOMMERCE] Great news ${customerName}! Your order #${order.id} from ${storeName} has been accepted. Total: ${order.totalAmount || order.amount} ETB. Please complete payment here: https://fcommerce.et`
+                          `[FCOMMERCE] Great news ${customerName}! Your order #${order.id} from ${storeName} has been accepted. Grand Total: ${totalAmount.toLocaleString()} ETB (Products: ${orderSubtotal.toLocaleString()} + Delivery: ${deliveryFee.toLocaleString()}). Please complete payment: https://fcommerce.et`
                         )}
                         className="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl flex items-center justify-center space-x-2 transition cursor-pointer shadow-xs"
                       >
@@ -286,7 +294,7 @@ const data = response.data;
                       <button
                         onClick={() => handleSendSMS(
                           merchantPhone,
-                          `[FCOMMERCE] Payment uploaded for order #${order.id}. Merchant, please verify receipt in dashboard: https://fcommerce.et`
+                          `[FCOMMERCE] Payment uploaded for order #${order.id} (Grand Total: ${totalAmount.toLocaleString()} ETB). Merchant, please verify receipt: https://fcommerce.et`
                         )}
                         className="w-full sm:w-auto px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-black text-xs rounded-xl flex items-center justify-center space-x-2 transition cursor-pointer shadow-xs"
                       >
@@ -348,19 +356,23 @@ const data = response.data;
                 return Array.isArray(parsedItems) && parsedItems.length > 0 ? (
                   parsedItems.map((item, idx) => {
                     const itemName = item.name || item.title || item.productName || item.product_name || 'Product Item';
-                    const itemQty = Number(item.quantity || item.qty || 1);
+                    // Use approvedQuantity if available (set by merchant), otherwise fallback to initial quantity
+                    const itemQty = Number(item.approvedQuantity !== undefined ? item.approvedQuantity : (item.quantity || item.qty || 1));
                     const itemPrice = Number(item.price || item.unitPrice || item.unit_price || 0);
+                    const isItemRejected = item.status === 'rejected' || itemQty === 0;
 
                     return (
-                      <div key={idx} className="flex justify-between items-center py-2 border-b border-slate-100 text-xs">
+                      <div key={idx} className={`flex justify-between items-center py-2 border-b border-slate-100 text-xs ${isItemRejected ? 'opacity-50 line-through' : ''}`}>
                         <div>
-                          <p className="font-extrabold text-slate-800">{itemName}</p>
+                          <p className="font-extrabold text-slate-800">
+                            {itemName} {isItemRejected && <span className="text-rose-600 no-underline text-[10px]">(Rejected)</span>}
+                          </p>
                           <p className="text-slate-400">
                             Qty: {itemQty} × {itemPrice.toLocaleString()} ETB
                           </p>
                         </div>
                         <span className="font-black text-slate-900">
-                          {(itemPrice * itemQty).toLocaleString()} ETB
+                          {(isItemRejected ? 0 : itemPrice * itemQty).toLocaleString()} ETB
                         </span>
                       </div>
                     );
@@ -376,7 +388,7 @@ const data = response.data;
             {/* TOTALS SUMMARY */}
             <div className="border-t pt-3 space-y-1 text-xs">
               <div className="flex justify-between text-slate-600">
-                <span>Subtotal:</span>
+                <span>Accepted Subtotal:</span>
                 <span>{Number(selectedOrder.subtotal || 0).toLocaleString()} ETB</span>
               </div>
               <div className="flex justify-between text-slate-600">
@@ -384,7 +396,7 @@ const data = response.data;
                 <span>{Number(selectedOrder.deliveryFee || 0).toLocaleString()} ETB</span>
               </div>
               <div className="flex justify-between font-black text-sm text-[#1E4D58] pt-1 border-t">
-                <span>Total Amount:</span>
+                <span>Grand Total:</span>
                 <span>{Number(selectedOrder.totalAmount || 0).toLocaleString()} ETB</span>
               </div>
             </div>

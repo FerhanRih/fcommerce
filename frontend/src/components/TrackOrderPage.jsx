@@ -83,14 +83,14 @@ const data = response.data;
     }
 
     setUploadingId(orderId);
-    const token = localStorage.getItem('token');
     const formData = new FormData();
     formData.append('receipt', file);
 
     try {
-    const response = await API.put(`/orders/${orderId}/upload-receipt`, formData);
-const data = response.data;
-      if (response.data.success) {
+      const response = await API.put(`/orders/${orderId}/upload-receipt`, formData);
+      const data = response.data;
+      
+      if (data.success) {
         setNotices({ ...notices, [orderId]: '✓ Payment receipt uploaded successfully!' });
         
         // Trigger notification for uploading receipt
@@ -102,6 +102,8 @@ const data = response.data;
         }
 
         fetchUserOrders();
+      } else {
+        setNotices({ ...notices, [orderId]: data.message || 'Failed to upload receipt.' });
       }
     } catch (err) {
       setNotices({ ...notices, [orderId]: err.response?.data?.message || 'Failed to upload receipt.' });
@@ -109,7 +111,7 @@ const data = response.data;
       setUploadingId(null);
     }
   };
-
+  
   const parseBankAccounts = (store) => {
     let raw = store?.bankAccounts;
     if (typeof raw === 'string') {

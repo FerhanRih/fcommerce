@@ -1,7 +1,6 @@
 // frontend/src/components/vendor/OrdersTab.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
-import API from '../../services/api';
+import API, { API_URL } from '../../services/api';
 
 export default function OrdersTab({ currentStore, setActiveStoreTab }) {
   console.log('🔍 [DEBUG] OrdersTab rendered with currentStore prop:', currentStore);
@@ -14,8 +13,17 @@ export default function OrdersTab({ currentStore, setActiveStoreTab }) {
   const [rejectedItemsMap, setRejectedItemsMap] = useState({});
   const [merchantNote, setMerchantNote] = useState('');
   const [notice, setNotice] = useState('');
-// Keep track of previous orders length/IDs to detect new incoming orders for notifications
+  
   const prevPendingCountRef = useRef(0);
+
+  // Helper function to format image and receipt URLs safely against API_URL
+  const getFormattedUrl = (url) => {
+    if (!url) return null;
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    const cleanBase = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
+    const cleanPath = url.startsWith('/') ? url : `/${url}`;
+    return `${cleanBase}${cleanPath}`;
+  };
 
   // 1. Fetch store orders
   const fetchStoreOrders = async () => {
@@ -33,7 +41,6 @@ export default function OrdersTab({ currentStore, setActiveStoreTab }) {
       if (response.data.success) {
         const fetchedOrders = response.data.orders || [];
         
-        // Check for new incoming requests and trigger browser notification
         const newPending = fetchedOrders.filter((o) => o?.status === 'pending_merchant');
         if (newPending.length > prevPendingCountRef.current && prevPendingCountRef.current !== 0) {
           if ('Notification' in window && Notification.permission === 'granted') {
@@ -92,7 +99,6 @@ export default function OrdersTab({ currentStore, setActiveStoreTab }) {
         setRejectedItemsMap({});
         setItemQuantitiesMap({});
 
-        // Trigger notification for action taken
         if ('Notification' in window && Notification.permission === 'granted') {
           new Notification(`Order #${orderId} ${action === 'accept' ? 'Accepted' : 'Rejected'}`, {
             body: `You successfully ${action}ed order #${orderId}.`,
@@ -122,12 +128,10 @@ export default function OrdersTab({ currentStore, setActiveStoreTab }) {
         status: 'payment_verified' 
       });
 
-      // Fixed: Checked paymentResponse instead of response
       if (paymentResponse.data.success) {
         setNotice('✓ Payment verified! Order marked for dispatch.');
         setTimeout(() => setNotice(''), 3000);
 
-        // Trigger notification
         if ('Notification' in window && Notification.permission === 'granted') {
           new Notification('Payment Verified & Dispatched', {
             body: `Payment for order #${orderId} has been verified successfully.`,
@@ -145,7 +149,7 @@ export default function OrdersTab({ currentStore, setActiveStoreTab }) {
   
   useEffect(() => {
     fetchStoreOrders();
-    const interval = setInterval(fetchStoreOrders, 10000); // Poll every 10 seconds for real-time updates
+    const interval = setInterval(fetchStoreOrders, 10000);
     return () => clearInterval(interval);
   }, [currentStore?.id]);
 
@@ -158,7 +162,6 @@ export default function OrdersTab({ currentStore, setActiveStoreTab }) {
 
   const pendingRequests = safeOrders.filter((o) => o?.status === 'pending_merchant');
   const pendingPayments = safeOrders.filter((o) => o?.status === 'payment_uploaded');
-  const completedOrders = safeOrders.filter((o) => o?.status === 'delivered');
 
   return (
     <div className="space-y-6">
@@ -239,7 +242,7 @@ export default function OrdersTab({ currentStore, setActiveStoreTab }) {
                     <div>
                       <span className="text-xs font-black text-slate-900">Order #{req.id}</span>
                       <span className="text-[10px] font-bold text-slate-400 block">
-                        Customer Phone: {req.deliveryAddress?.phoneNumber}
+                        Customer Phone: {req.deliveryAddress?.phoneNumber || req.phoneNumber || 'N/A'}
                       </span>
                     </div>
                     <span className="bg-amber-100 text-amber-800 text-[10px] font-black px-3 py-1 rounded-full uppercase">
@@ -301,8 +304,9 @@ export default function OrdersTab({ currentStore, setActiveStoreTab }) {
                       );
                     })}
 
+                    {/* 🛠️ FIXED: Merchant sees baseline products subtotal only, excluding delivery fee */}
                     <div className="flex justify-between items-center pt-3 border-t border-slate-200 font-bold text-xs">
-                      <span className="text-slate-600 uppercase">Merchant Item Subtotal:</span>
+                      <span className="text-slate-600 uppercase">Products Subtotal (Your Revenue):</span>
                       <span className="text-sm font-black text-[#1E4D58]">
                         {calculatedMerchantSubtotal.toLocaleString()} ETB
                       </span>
@@ -353,11 +357,20 @@ export default function OrdersTab({ currentStore, setActiveStoreTab }) {
               <div key={ord.id} className="bg-white border border-slate-200 rounded-3xl p-5 space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-black text-slate-900">Order #{ord.id}</span>
-                  <span className="text-xs font-bold text-[#1E4D58]">Total: {ord.totalAmount} ETB</span>
+                  {/* 🛠️ FIXED: Show subtotal + delivery breakdown clearly */}
+                  <div className="text-right">
+                    <span className="text-xs font-bold text-[#1E4D58] block">Grand Total: {Number(ord.totalAmount || 0).toLocaleString()} ETB</span>
+                    <span className="text-[10px] text-slate-400">(Products: {Number(ord.subtotal || 0).toLocaleString()} + Delivery: {Number(ord.deliveryFee || 0).toLocaleString()})</span>
+                  </div>
                 </div>
                 {ord.paymentReceiptUrl && (
                   <div className="border border-slate-200 rounded-2xl p-2 bg-slate-50 text-center">
-                    <a href={`http://localhost:5000${ord.paymentReceiptUrl}`} target="_blank" rel="noreferrer" className="text-xs font-bold text-blue-600 underline">
+                    <a 
+                      href={getFormattedUrl(ord.paymentReceiptUrl)} 
+                      target="_blank" 
+                      rel="noreferrer" 
+                      className="text-xs font-bold text-blue-600 underline"
+                    >
                       View Uploaded Bank Receipt
                     </a>
                   </div>
@@ -394,7 +407,9 @@ export default function OrdersTab({ currentStore, setActiveStoreTab }) {
                   </span>
                 </div>
                 <div className="text-xs text-slate-500 flex justify-between">
-                  <span>Total: {Number(ord.totalAmount || 0).toLocaleString()} ETB</span>
+                  {/* 🛠️ FIXED: Show subtotal revenue for merchant */}
+                  <span>Products Subtotal: {Number(ord.subtotal || 0).toLocaleString()} ETB</span>
+                  <span className="text-slate-400">Delivery: {Number(ord.deliveryFee || 0).toLocaleString()} ETB</span>
                 </div>
               </div>
             ))

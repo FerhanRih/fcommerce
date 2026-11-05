@@ -14,6 +14,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Check every 1 minute for expired pending orders
 setInterval(async () => {
   try {
@@ -44,7 +45,6 @@ const adminRoutes = require('./routes/adminRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 
 app.use('/api/orders', orderRoutes);
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/settings', settingsRoutes);
 // API Routes
 app.use('/api/auth', authRoutes);

@@ -92,6 +92,44 @@ const adminStoreController = {
       console.error('Update Store Status Error:', error);
       return res.status(500).json({ success: false, message: 'Failed to update store status.' });
     }
+  },
+
+  // Delete Store and Demote User back to regular 'user' role
+  deleteStore: async (req, res) => {
+    try {
+      const { storeId } = req.params;
+      const store = await Store.findByPk(storeId);
+      
+      if (!store) {
+        return res.status(404).json({ success: false, message: 'Store not found.' });
+      }
+
+      const userId = store.userId;
+
+      // Delete associated products
+      if (global.sequelize && global.sequelize.models.Product) {
+        await global.sequelize.models.Product.destroy({ where: { storeId: store.id } });
+      }
+
+      // Destroy store record
+      await store.destroy();
+
+      // Demote owner back to regular customer role
+      if (userId && User) {
+        const user = await User.findByPk(userId);
+        if (user) {
+          await user.update({ role: 'user' });
+        }
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Store permanently revoked/deleted and owner demoted to regular user.',
+      });
+    } catch (error) {
+      console.error('Delete Store & Demote Error:', error);
+      return res.status(500).json({ success: false, message: 'Failed to delete store.' });
+    }
   }
 };
 

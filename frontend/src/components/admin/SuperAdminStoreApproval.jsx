@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Store, User, CheckCircle2, XCircle, 
-  Search, ShieldAlert, MapPin, Calendar, Navigation 
+  Search, ShieldAlert, MapPin, Calendar, Navigation, Trash2 
 } from 'lucide-react';
 import API from '../../services/api';
 
@@ -16,6 +16,9 @@ const SuperAdminStoreApproval = () => {
   // Rejection Modal State
   const [storeToReject, setStoreToReject] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
+
+  // Delete / Revoke Modal State
+  const [storeToDelete, setStoreToDelete] = useState(null);
 
   // Keep track of previous store count for notification triggers
   const prevCountRef = useRef(0);
@@ -49,10 +52,8 @@ const SuperAdminStoreApproval = () => {
 
   const fetchStores = async () => {
     try {
-      const token = localStorage.getItem('token');
-      
-const response = await API.get(`/admin/stores?tab=${tab}&search=${encodeURIComponent(searchQuery)}`);
-const data = response.data;
+      const response = await API.get(`/admin/stores?tab=${tab}&search=${encodeURIComponent(searchQuery)}`);
+      const data = response.data;
       if (data.success) {
         const fetchedStores = data.stores || [];
         setStores(fetchedStores);
@@ -78,23 +79,20 @@ const data = response.data;
 
   const handleUpdateStatus = async (storeId, newStatus, reason = '') => {
     try {
-      const token = localStorage.getItem('token');
       const response = await API.put(`/admin/stores/${storeId}/status`, {
-  status: newStatus,
-  rejectionReason: reason
-});
-const data = response.data;
+        status: newStatus,
+        rejectionReason: reason
+      });
+      const data = response.data;
       if (data.success) {
         showToast(`Store successfully ${newStatus.toUpperCase()}!`);
         setStoreToReject(null);
         setRejectionReason('');
         fetchStores();
 
-        // Launch SMS launcher & Browser Notification
         if (data.ownerPhone) {
           const smsMsg = newStatus === 'approved' 
             ? `[FCOMMERCE] Congratulations! Your store has been APPROVED. You can now start listing products and selling on FCOMMERCE.`
-            .trim()
             : `[FCOMMERCE] Store Application Update: Unfortunately, your store was not approved. Reason: ${reason || 'Review criteria not met.'}`;
           
           const cleanPhone = data.ownerPhone.startsWith('+') ? data.ownerPhone : `+251${data.ownerPhone.replace(/^0/, '')}`;
@@ -113,6 +111,23 @@ const data = response.data;
     } catch (error) {
       console.error('Update Store Error:', error);
       alert('Network error while updating store status.');
+    }
+  };
+
+  const handleDeleteStore = async (storeId) => {
+    try {
+      const response = await API.delete(`/admin/stores/${storeId}`);
+      const data = response.data;
+      if (data.success) {
+        showToast('Store permanently deleted & user demoted to regular user.');
+        setStoreToDelete(null);
+        fetchStores();
+      } else {
+        alert(data.message || 'Failed to delete store.');
+      }
+    } catch (error) {
+      console.error('Delete Store Error:', error);
+      alert('Network error while deleting store.');
     }
   };
 
@@ -173,12 +188,48 @@ const data = response.data;
         </div>
       )}
 
+      {/* DELETE / REVOKE STORE MODAL */}
+      {storeToDelete && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-200">
+            <div className="flex items-center space-x-3 text-rose-600">
+              <div className="p-3 bg-rose-50 rounded-2xl">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-black text-slate-900 text-base">Revoke & Delete Store</h3>
+                <p className="text-xs text-slate-500">Store: {storeToDelete.storeName || storeToDelete.name}</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600">
+              Are you sure you want to delete this approved store? This action will remove the store and demote the owner back to a regular customer account.
+            </p>
+
+            <div className="flex space-x-3 pt-2">
+              <button
+                onClick={() => setStoreToDelete(null)}
+                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs rounded-xl transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteStore(storeToDelete.id)}
+                className="flex-1 py-3 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs rounded-xl transition cursor-pointer shadow-xs"
+              >
+                Yes, Delete & Demote
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* HEADER & SEARCH BAR */}
       <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">Store Approval & Merchant Directory</h2>
           <p className="text-xs text-slate-500 font-medium mt-0.5">
-            Review merchant store applications, verify user credentials, and approve store access.
+            Review merchant store applications, verify user credentials, and manage store access.
           </p>
         </div>
 
@@ -308,10 +359,13 @@ const data = response.data;
                     )}
 
                     {tab === 'approved' && (
-                      <span className="text-xs font-extrabold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 flex items-center space-x-1">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>Active Approved Merchant</span>
-                      </span>
+                      <button
+                        onClick={() => setStoreToDelete(store)}
+                        className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs rounded-xl cursor-pointer shadow-xs transition flex items-center space-x-1.5"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Revoke</span>
+                      </button>
                     )}
                   </div>
                 </div>

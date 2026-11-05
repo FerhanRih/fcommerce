@@ -1,7 +1,7 @@
 // frontend/src/components/CartCheckoutModal.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import API from '../services/api';
+import API, { API_URL } from '../services/api';
 
 // Official Addis Ababa Subcities with default dynamic delivery fees (Admin configurable)
 const ADDIS_SUBCITIES = [

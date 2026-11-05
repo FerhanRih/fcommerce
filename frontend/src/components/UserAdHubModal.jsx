@@ -74,12 +74,11 @@ export default function UserAdHubModal({ onClose }) {
     formData.append('durationDays', selectedPkg.days);
     formData.append('image', imageFile);
     formData.append('receipt', receiptFile);
-
-    try {
      
-const response = await API.post('/banners/submit', formData);
-const data = response.data;
-      if (res.ok) {
+try {
+      const response = await API.post('/banners/submit', formData);
+      const data = response.data;
+      if (data.success) { // 👈 Fixed response check
         showToast('Ad campaign request submitted successfully!');
         setTitle('');
         setSubtitle('');

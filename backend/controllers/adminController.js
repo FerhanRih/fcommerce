@@ -1,6 +1,7 @@
 // backend/controllers/adminController.js
 const { sequelize } = require('../models');
 const { Op } = require('sequelize');
+const { SystemSetting } = require('../models');
 
 const adminController = {
   // 1. Comprehensive Dashboard Stats
@@ -318,6 +319,44 @@ try {
       return res.status(500).json({ success: false, message: 'Failed to retrieve lifecycle orders.' });
     }
   },
+
+// Get storefront/platform status
+getPlatformStatus: async (req, res) => {
+  try {
+    let setting = await SystemSetting.findOne({ where: { key: 'storefrontOpen' } });
+    const isOpen = setting ? JSON.parse(setting.value) : true;
+    return res.status(200).json({ success: true, storefrontOpen: isOpen });
+  } catch (error) {
+    console.error('Get Status Error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch status.' });
+  }
+},
+
+// Update storefront/platform status
+updatePlatformStatus: async (req, res) => {
+  try {
+    const { storefrontOpen } = req.body;
+    
+    let [setting, created] = await SystemSetting.findOrCreate({
+      where: { key: 'storefrontOpen' },
+      defaults: { value: JSON.stringify(storefrontOpen) }
+    });
+
+    if (!created) {
+      setting.value = JSON.stringify(storefrontOpen);
+      await setting.save();
+    }
+
+    return res.status(200).json({ 
+      success: true, 
+      message: `Platform successfully ${storefrontOpen ? 'OPENED' : 'PAUSED'}!`,
+      storefrontOpen 
+    });
+  } catch (error) {
+    console.error('Update Status Error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to update status.' });
+  }
+}
 
 };
 

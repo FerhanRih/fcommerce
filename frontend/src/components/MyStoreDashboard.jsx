@@ -4,7 +4,7 @@ import axios from 'axios';
 import OrdersTab from './vendor/OrdersTab';
 import BankSettingsTab from "./vendor/BankSettingsTab";
 import StoreSettingsPage from './vendor/StoreSettingsPage';
- import API from '../services/api';
+import API, { API_URL } from '../services/api';
 
 export default function MyStoreDashboard({ currentStore, currentUser, onOpenCreateStore, onBackToMain, onLogout, onStoreUpdated }) {
   
@@ -42,7 +42,7 @@ export default function MyStoreDashboard({ currentStore, currentUser, onOpenCrea
   const [editMinOrderQty, setEditMinOrderQty] = useState(1); // For editing products
 
   // Fetch Merchant's Listed Products
-  const fetchStoreProducts = async () => {  
+  const fetchStoreProducts = async () => {      
     if (!currentStore?.id) return;
     setLoadingProducts(true);
     try {
@@ -249,7 +249,12 @@ const data = response.data;
  const getFormattedImageUrl = (url) => {
   if (!url) return null;
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  return `${API_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+  
+  // Clean up potential duplicate slashes
+  const cleanBase = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
+  const cleanPath = url.startsWith('/') ? url : `/${url}`;
+  
+  return `${cleanBase}${cleanPath}`;
 };
 
   return (

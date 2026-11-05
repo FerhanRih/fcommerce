@@ -32,15 +32,14 @@ const SuperAdminBroadcast = () => {
 
     setSending(true);
     try {
-      const token = localStorage.getItem('token');
+      // 🛠️ Include target in the payload so the backend processes the audience correctly
+      const response = await API.post('/admin/broadcast', { message, target });
+      const data = response.data;
       
-const response = await API.post('/admin/broadcast', { message });
-const data = response.data;
       if (data.success) {
         showToast('Broadcast notification dispatched successfully!');
         setMessage('');
 
-        // Trigger local browser notification test for admin
         if ('Notification' in window && Notification.permission === 'granted') {
           new Notification('FCOMMERCE', { body: message });
         }
@@ -48,7 +47,8 @@ const data = response.data;
         showToast(data.message || 'Failed to send broadcast.');
       }
     } catch (err) {
-      showToast('Network error while dispatching broadcast.');
+      console.error('Broadcast error:', err);
+      showToast(err.response?.data?.message || 'Network error while dispatching broadcast.');
     } finally {
       setSending(false);
     }
@@ -121,7 +121,7 @@ const data = response.data;
               rows="5"
               value={message}
               onChange={e => setMessage(e.target.value)}
-              placeholder="Type your announcement or alert message here... (Triggers browser notifications for online recipients)"
+              placeholder="Type your announcement or alert message here..."
               className="w-full p-4 border border-slate-200 rounded-2xl text-xs font-medium focus:outline-hidden focus:ring-2 focus:ring-[#1E4D58]/20"
               required
             />

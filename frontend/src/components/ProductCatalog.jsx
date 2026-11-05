@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import CategoryBar from './CategoryBar';
 import ProductCard from './ProductCard';
- import API from '../services/api'; // Use '../../services/api' if inside a subfolder
+import API, { API_URL } from '../services/api';
 
 const ProductCatalog = ({ selectedStore, onSelectProduct, wishlist = [], onToggleWishlist }) => {
   const [products, setProducts] = useState([]);

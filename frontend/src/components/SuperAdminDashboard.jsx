@@ -131,7 +131,7 @@ const SuperAdminDashboard = ({ currentUser, onLogout, onBackToMain }) => {
         `}>
           <div className="px-2 py-1 text-[11px] font-black text-slate-400 uppercase tracking-wider flex justify-between items-center mb-1">
             <span>Control Modules</span>
-            <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded-md font-mono text-slate-500">10 Modules</span>
+            <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded-md font-mono text-slate-500">11 Modules</span>
           </div>
 
           <div className="space-y-1">

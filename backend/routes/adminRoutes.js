@@ -72,10 +72,10 @@ router.get('/payment-accounts', checkHandler(adminAdController.getPaymentAccount
 router.post('/payment-accounts', protect, requireAdmin, checkHandler(adminAdController.savePaymentAccount, 'adminAdController.savePaymentAccount'));
 router.delete('/payment-accounts/:id', protect, requireAdmin, checkHandler(adminAdController.deletePaymentAccount, 'adminAdController.deletePaymentAccount'));
 
-router.get('/stores', protect, adminStoreController.getAdminStores);
-router.put('/stores/:storeId/status', protect, adminStoreController.updateStoreStatus);
+router.get('/stores', protect, requireAdmin, checkHandler(adminStoreController.getAdminStores, 'adminStoreController.getAdminStores'));
+router.put('/stores/:storeId/status', protect, requireAdmin, checkHandler(adminStoreController.updateStoreStatus, 'adminStoreController.updateStoreStatus'));
+router.delete('/stores/:storeId', protect, requireAdmin, checkHandler(adminStoreController.deleteStore, 'adminStoreController.deleteStore'));
 
-// 7. Roles & Staff (Page 6)
 router.get('/staff-users', protect, requireAdmin, checkHandler(adminRoleController.getStaffUsers, 'adminRoleController.getStaffUsers'));
 router.put('/update-role', protect, requireAdmin, checkHandler(adminRoleController.updateUserRole, 'adminRoleController.updateUserRole'));
 router.post('/update-role', protect, requireAdmin, checkHandler(adminRoleController.updateUserRole, 'adminRoleController.updateUserRole')); 
@@ -88,6 +88,9 @@ router.put('/fleet/drivers/:driverId/status', protect, requireAdmin, checkHandle
 
 // 9. Marketplace Intelligence Leaderboard (Page 9)
 router.get('/marketplace-intelligence', protect, requireAdmin, checkHandler(adminIntelligenceController.getMarketplaceIntelligence, 'adminIntelligenceController.getMarketplaceIntelligence'));
+
+router.get('/platform-status', checkHandler(adminController.getPlatformStatus, 'adminController.getPlatformStatus'));
+router.put('/platform-status', protect, requireAdmin, checkHandler(adminController.updatePlatformStatus, 'adminController.updatePlatformStatus'));
 
 router.post('/broadcast', protect, requireAdmin, checkHandler(adminBroadcastController.sendBroadcast, 'adminBroadcastController.sendBroadcast'));
 router.get('/broadcast-client', checkHandler(adminBroadcastController.getClientBroadcasts, 'adminBroadcastController.getClientBroadcasts'));

@@ -31,7 +31,9 @@ router.put('/:id/profile-image', protect, upload.single('image'), async (req, re
 
     const imageUrl = `/uploads/${req.file.filename}`;
 
-    await store.update({ logoUrl: imageUrl });
+    // 🛠️ Fix: Explicitly update both model property and force database update
+    store.logoUrl = imageUrl;
+    await store.save();
 
     return res.status(200).json({
       success: true,

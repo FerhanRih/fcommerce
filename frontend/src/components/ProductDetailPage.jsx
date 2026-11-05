@@ -1,7 +1,7 @@
 // frontend/src/components/ProductDetailPage.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
- import API from '../services/api';
+import API, { API_URL } from '../services/api';
 
 export default function ProductDetailPage({
   product,
@@ -117,6 +117,7 @@ const data = response.data;
 
     fetchCrossSellData();
   }, [product]);
+
   const getFormattedImageUrl = (url) => {
   if (!url) return null;
   if (url.startsWith('http://') || url.startsWith('https://')) return url;

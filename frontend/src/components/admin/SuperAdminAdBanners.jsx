@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Megaphone, CheckCircle2, XCircle, RefreshCw, DollarSign, Clock, Check, X, Eye, Plus, Trash2, Edit3, ShieldCheck 
 } from 'lucide-react';
-import API from '../../services/api';
+import API, { API_URL } from '../../services/api';
 
 const SuperAdminAdBanners = () => {
   const [banners, setBanners] = useState([]);
@@ -140,17 +140,13 @@ const data = response.data;
   };
 
   const handleDeleteAccount = async (id) => {
-    if (!confirm('Remove this payment account?')) return;
-    const token = localStorage.getItem('token');
-    try {
-      await fetch(`http://localhost:5000/api/admin/payment-accounts/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      showToast('Payment account removed.');
-      fetchPaymentAccounts();
-    } catch (err) { alert('Failed to delete.'); }
-  };
+  if (!confirm('Remove this payment account?')) return;
+  try {
+    await API.delete(`/admin/payment-accounts/${id}`);
+    showToast('Payment account removed.');
+    fetchPaymentAccounts();
+  } catch (err) { alert('Failed to delete.'); }
+};
 
   // Filtered lists based on active tab (Completely hides expired ads)
   const filteredBanners = banners.filter(ad => {
@@ -358,28 +354,27 @@ const data = response.data;
         </div>
       )}
 
-      {/* IMAGE PREVIEW MODALS */}
       {selectedImage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl p-4 max-w-2xl w-full relative space-y-3">
-            <div className="flex justify-between items-center border-b pb-2">
-              <h4 className="text-xs font-black uppercase text-slate-700">Banner Artwork Preview</h4>
-              <button onClick={() => setSelectedImage(null)} className="px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-full font-black text-xs text-slate-800 cursor-pointer">✕ Close</button>
-            </div>
-            <img src={`http://localhost:5000${selectedImage}`} alt="Banner" className="max-w-full max-h-[70vh] object-contain mx-auto rounded-xl" />
-          </div>
-        </div>
-      )}
-      {selectedReceipt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl p-4 max-w-2xl w-full relative space-y-3">
-            <div className="flex justify-between items-center border-b pb-2">
-              <h4 className="text-xs font-black uppercase text-slate-700">Payment Receipt Preview</h4>
-              <button onClick={() => setSelectedReceipt(null)} className="px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-full font-black text-xs text-slate-800 cursor-pointer">✕ Close</button>
-            </div>
-            <img src={`http://localhost:5000${selectedReceipt}`} alt="Receipt" className="max-w-full max-h-[70vh] object-contain mx-auto rounded-xl" />
-          </div>
-        </div>
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
+    <div className="bg-white rounded-3xl p-4 max-w-2xl w-full relative space-y-3">
+      <div className="flex justify-between items-center border-b pb-2">
+        <h4 className="text-xs font-black uppercase text-slate-700">Banner Artwork Preview</h4>
+        <button onClick={() => setSelectedImage(null)} className="px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-full font-black text-xs text-slate-800 cursor-pointer">✕ Close</button>
+      </div>
+      <img src={selectedImage.startsWith('http') ? selectedImage : `${API_URL}${selectedImage}`} alt="Banner" className="max-w-full max-h-[70vh] object-contain mx-auto rounded-xl" />
+    </div>
+  </div>
+)}
+{selectedReceipt && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
+    <div className="bg-white rounded-3xl p-4 max-w-2xl w-full relative space-y-3">
+      <div className="flex justify-between items-center border-b pb-2">
+        <h4 className="text-xs font-black uppercase text-slate-700">Payment Receipt Preview</h4>
+        <button onClick={() => setSelectedReceipt(null)} className="px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-full font-black text-xs text-slate-800 cursor-pointer">✕ Close</button>
+      </div>
+      <img src={selectedReceipt.startsWith('http') ? selectedReceipt : `${API_URL}${selectedReceipt}`} alt="Receipt" className="max-w-full max-h-[70vh] object-contain mx-auto rounded-xl" />
+    </div>
+  </div>
       )}
     </div>
   );
