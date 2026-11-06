@@ -153,7 +153,7 @@ const makeSuperAdmin = async () => {
   }
 };
 
-const syncOptions = { alter: true };
+const syncOptions = {};
 sequelize
   .sync(syncOptions)
   .then(async () => {
