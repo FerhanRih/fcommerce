@@ -10,12 +10,17 @@ const API = axios.create({
   }
 });
 
-// Attach token automatically if logged in
+// Attach token automatically if logged in & handle FormData correctly
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
+  }
+
   return config;
 }, (error) => {
   return Promise.reject(error);

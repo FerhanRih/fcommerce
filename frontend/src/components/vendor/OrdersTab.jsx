@@ -304,7 +304,6 @@ export default function OrdersTab({ currentStore, setActiveStoreTab }) {
                       );
                     })}
 
-                    {/* 🛠️ FIXED: Merchant sees baseline products subtotal only, excluding delivery fee */}
                     <div className="flex justify-between items-center pt-3 border-t border-slate-200 font-bold text-xs">
                       <span className="text-slate-600 uppercase">Products Subtotal (Your Revenue):</span>
                       <span className="text-sm font-black text-[#1E4D58]">
@@ -357,10 +356,11 @@ export default function OrdersTab({ currentStore, setActiveStoreTab }) {
               <div key={ord.id} className="bg-white border border-slate-200 rounded-3xl p-5 space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-black text-slate-900">Order #{ord.id}</span>
-                  {/* 🛠️ FIXED: Show subtotal + delivery breakdown clearly */}
+                  {/* Merchant sees product revenue only, no delivery fee */}
                   <div className="text-right">
-                    <span className="text-xs font-bold text-[#1E4D58] block">Grand Total: {Number(ord.totalAmount || 0).toLocaleString()} ETB</span>
-                    <span className="text-[10px] text-slate-400">(Products: {Number(ord.subtotal || 0).toLocaleString()} + Delivery: {Number(ord.deliveryFee || 0).toLocaleString()})</span>
+                    <span className="text-xs font-black text-[#1E4D58] block">
+                      Products Total: {Number(ord.subtotal || 0).toLocaleString()} ETB
+                    </span>
                   </div>
                 </div>
                 {ord.paymentReceiptUrl && (
@@ -407,9 +407,7 @@ export default function OrdersTab({ currentStore, setActiveStoreTab }) {
                   </span>
                 </div>
                 <div className="text-xs text-slate-500 flex justify-between">
-                  {/* 🛠️ FIXED: Show subtotal revenue for merchant */}
-                  <span>Products Subtotal: {Number(ord.subtotal || 0).toLocaleString()} ETB</span>
-                  <span className="text-slate-400">Delivery: {Number(ord.deliveryFee || 0).toLocaleString()} ETB</span>
+                  <span>Products Revenue: {Number(ord.subtotal || 0).toLocaleString()} ETB</span>
                 </div>
               </div>
             ))

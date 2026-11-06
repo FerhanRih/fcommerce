@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import AdBanner from './components/AdBanner';
 import axios from 'axios';
+import API, { API_URL } from './services/api';
 import ProductCatalog from './components/ProductCatalog';
 import ProductDetailPage from './components/ProductDetailPage';
 import CartCheckoutModal from './components/CartCheckoutModal';
@@ -16,6 +17,7 @@ import TrackOrderPage from './components/TrackOrderPage';
 import OrderHistoryPage from './components/OrderHistoryPage';
 import UserSettingsPage from './components/UserSettingsPage';
 import SuperAdminDashboard from './components/SuperAdminDashboard';
+
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -481,10 +483,10 @@ const handleNavigation = (pageId, param = null) => {
                           <div className="flex items-center space-x-3">
                             {item.imageUrl && (
                               <img 
-                                src={item.imageUrl.startsWith('http') ? item.imageUrl : `http://localhost:5000${item.imageUrl}`} 
-                                alt={item.title} 
-                                className="w-12 h-12 object-cover rounded-xl border" 
-                              />
+      src={item.imageUrl.startsWith('http') ? item.imageUrl : `${API_URL}${item.imageUrl.startsWith('/') ? '' : '/'}${item.imageUrl}`} 
+      alt={item.title} 
+      className="w-12 h-12 object-cover rounded-xl border" 
+    />
                             )}
                             <div>
                               <h4 className="text-xs font-black text-slate-900 line-clamp-1 group-hover:text-[#1E4D58] transition">{item.title}</h4>

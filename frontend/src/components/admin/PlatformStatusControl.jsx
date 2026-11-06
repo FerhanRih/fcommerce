@@ -6,28 +6,29 @@ import API from '../../services/api';
 export default function PlatformStatusControl() {
   const [storefrontOpen, setStorefrontOpen] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
   const [statusMsg, setStatusMsg] = useState('');
 
   // Fetch current status on mount
   useEffect(() => {
-    
-API.get('/settings/platform-status')
-  .then(response => {
-    if (response.data.success) setStorefrontOpen(response.data.storefrontOpen);
-  })
-  .catch(err => console.error(err));
-      
+    API.get('/settings/platform-status')
+      .then(response => {
+        if (response.data.success) {
+          setStorefrontOpen(response.data.storefrontOpen);
+        }
+      })
+      .catch(err => console.error(err))
+      .finally(() => setFetching(false));
   }, []);
 
   const handleToggle = async (newStatus) => {
     setLoading(true);
     setStatusMsg('');
     try {
-      const token = localStorage.getItem('token');
       const response = await API.put('/settings/platform-status', {
-  storefrontOpen: newStatus
-});
-const data = response.data;
+        storefrontOpen: newStatus
+      });
+      const data = response.data;
       if (data.success) {
         setStorefrontOpen(data.storefrontOpen);
         setStatusMsg(data.message);
@@ -53,9 +54,11 @@ const data = response.data;
               Platform Kill-Switch / Maintenance Mode
             </h3>
             <p className="text-xs text-slate-600 font-medium mt-0.5">
-              {storefrontOpen 
-                ? 'Storefront is currently OPEN. Customers can place orders normally.' 
-                : 'Storefront is PAUSED. New order requests are blocked with a maintenance notice.'}
+              {fetching 
+                ? 'Loading platform status...' 
+                : storefrontOpen 
+                  ? 'Storefront is currently OPEN. Customers can place orders normally.' 
+                  : 'Storefront is PAUSED. New order requests are blocked with a maintenance notice.'}
             </p>
           </div>
         </div>
@@ -63,7 +66,7 @@ const data = response.data;
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
             onClick={() => handleToggle(true)}
-            disabled={loading || storefrontOpen}
+            disabled={loading || fetching || storefrontOpen}
             className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl font-black text-xs transition cursor-pointer ${
               storefrontOpen 
                 ? 'bg-emerald-600 text-white shadow-md' 
@@ -75,7 +78,7 @@ const data = response.data;
           
           <button
             onClick={() => handleToggle(false)}
-            disabled={loading || !storefrontOpen}
+            disabled={loading || fetching || !storefrontOpen}
             className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl font-black text-xs transition cursor-pointer ${
               !storefrontOpen 
                 ? 'bg-rose-600 text-white shadow-md animate-pulse' 

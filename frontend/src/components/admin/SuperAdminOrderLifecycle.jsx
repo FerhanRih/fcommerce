@@ -208,7 +208,6 @@ const SuperAdminOrderLifecycle = () => {
 
               const orderSubtotal = Number(order.subtotal || 0);
               const deliveryFee = Number(order.deliveryFee || 0);
-              const totalAmount = Number(order.totalAmount || order.amount || (orderSubtotal + deliveryFee));
 
               return (
                 <div key={order.id} className="border border-slate-200 rounded-2xl p-4 sm:p-5 hover:border-slate-300 transition space-y-4 bg-slate-50/50">
@@ -223,10 +222,10 @@ const SuperAdminOrderLifecycle = () => {
                     </div>
                     <div className="text-right">
                       <div className="text-sm font-black text-slate-900">
-                        Grand Total: {totalAmount.toLocaleString()} <span className="text-[10px]">ETB</span>
+                        Products Total: {orderSubtotal.toLocaleString()} <span className="text-[10px]">ETB</span>
                       </div>
                       <div className="text-[10px] text-slate-500 font-semibold">
-                        (Products Subtotal: {orderSubtotal.toLocaleString()} + Delivery: {deliveryFee.toLocaleString()})
+                        (Delivery Fee: {deliveryFee.toLocaleString()} ETB paid in cash)
                       </div>
                     </div>
                   </div>
@@ -261,12 +260,12 @@ const SuperAdminOrderLifecycle = () => {
                       <span>View Order Items</span>
                     </button>
 
-                    {/* SUB-TAB 1: REQUEST SMS */}
+                    {/* SUB-TAB 1: REQUEST SMS (Merchant gets only products amount) */}
                     {activeSubTab === 'requests' && (
                       <button
                         onClick={() => handleSendSMS(
                           merchantPhone,
-                          `[FCOMMERCE] New order #${order.id} received for ${storeName} (Products Subtotal: ${orderSubtotal.toLocaleString()} ETB). Please review and accept: https://fcommerce.et/orders/${order.id}`
+                          `[FCOMMERCE] New order #${order.id} received for ${storeName}. Products Subtotal: ${orderSubtotal.toLocaleString()} ETB. Please review and accept: https://fcommerce.et/orders/${order.id}`
                         )}
                         className="w-full sm:w-auto px-4 py-2 bg-[#1E4D58] hover:bg-[#163C45] text-white font-black text-xs rounded-xl flex items-center justify-center space-x-2 transition cursor-pointer shadow-xs"
                       >
@@ -275,12 +274,12 @@ const SuperAdminOrderLifecycle = () => {
                       </button>
                     )}
 
-                    {/* SUB-TAB 2: DECISION SMS */}
+                    {/* SUB-TAB 2: DECISION SMS (User gets products amount + cash delivery reminder) */}
                     {activeSubTab === 'decision' && (
                       <button
                         onClick={() => handleSendSMS(
                           customerPhone,
-                          `[FCOMMERCE] Great news ${customerName}! Your order #${order.id} from ${storeName} has been accepted. Grand Total: ${totalAmount.toLocaleString()} ETB (Products: ${orderSubtotal.toLocaleString()} + Delivery: ${deliveryFee.toLocaleString()}). Please complete payment: https://fcommerce.et`
+                          `[FCOMMERCE] Great news ${customerName}! Your order #${order.id} from ${storeName} is accepted. Products Amount: ${orderSubtotal.toLocaleString()} ETB (Delivery fee of ${deliveryFee.toLocaleString()} ETB is paid in cash upon delivery). Please complete payment: https://fcommerce.et`
                         )}
                         className="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl flex items-center justify-center space-x-2 transition cursor-pointer shadow-xs"
                       >
@@ -289,12 +288,12 @@ const SuperAdminOrderLifecycle = () => {
                       </button>
                     )}
 
-                    {/* SUB-TAB 3: PAID SMS */}
+                    {/* SUB-TAB 3: PAID SMS (Merchant gets products amount verification notice) */}
                     {activeSubTab === 'paid' && (
                       <button
                         onClick={() => handleSendSMS(
                           merchantPhone,
-                          `[FCOMMERCE] Payment uploaded for order #${order.id} (Grand Total: ${totalAmount.toLocaleString()} ETB). Merchant, please verify receipt: https://fcommerce.et`
+                          `[FCOMMERCE] Payment uploaded for order #${order.id} (Products Amount: ${orderSubtotal.toLocaleString()} ETB). Merchant, please verify receipt: https://fcommerce.et`
                         )}
                         className="w-full sm:w-auto px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-black text-xs rounded-xl flex items-center justify-center space-x-2 transition cursor-pointer shadow-xs"
                       >
@@ -303,12 +302,12 @@ const SuperAdminOrderLifecycle = () => {
                       </button>
                     )}
 
-                    {/* SUB-TAB 4: VERIFIED SMS */}
+                    {/* SUB-TAB 4: VERIFIED SMS (Buyer dispatch notice + cash delivery reminder) */}
                     {activeSubTab === 'verified' && (
                       <button
                         onClick={() => handleSendSMS(
                           customerPhone,
-                          `[FCOMMERCE] Payment for order #${order.id} is verified! Your items are now queued for delivery.`
+                          `[FCOMMERCE] Payment for order #${order.id} is verified! Your items are in transit. Delivery fee (${deliveryFee.toLocaleString()} ETB) is payable in cash upon arrival.`
                         )}
                         className="w-full sm:w-auto px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white font-black text-xs rounded-xl flex items-center justify-center space-x-2 transition cursor-pointer shadow-xs"
                       >
@@ -326,7 +325,7 @@ const SuperAdminOrderLifecycle = () => {
 
       </div>
 
-      
+      {/* DETAIL MODAL */}
       {selectedOrder && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-xl">
@@ -356,7 +355,6 @@ const SuperAdminOrderLifecycle = () => {
                 return Array.isArray(parsedItems) && parsedItems.length > 0 ? (
                   parsedItems.map((item, idx) => {
                     const itemName = item.name || item.title || item.productName || item.product_name || 'Product Item';
-                    // Use approvedQuantity if available (set by merchant), otherwise fallback to initial quantity
                     const itemQty = Number(item.approvedQuantity !== undefined ? item.approvedQuantity : (item.quantity || item.qty || 1));
                     const itemPrice = Number(item.price || item.unitPrice || item.unit_price || 0);
                     const isItemRejected = item.status === 'rejected' || itemQty === 0;
@@ -388,11 +386,11 @@ const SuperAdminOrderLifecycle = () => {
             {/* TOTALS SUMMARY */}
             <div className="border-t pt-3 space-y-1 text-xs">
               <div className="flex justify-between text-slate-600">
-                <span>Accepted Subtotal:</span>
+                <span>Products Subtotal:</span>
                 <span>{Number(selectedOrder.subtotal || 0).toLocaleString()} ETB</span>
               </div>
               <div className="flex justify-between text-slate-600">
-                <span>Delivery Fee:</span>
+                <span>Delivery Fee (Cash on Delivery):</span>
                 <span>{Number(selectedOrder.deliveryFee || 0).toLocaleString()} ETB</span>
               </div>
               <div className="flex justify-between font-black text-sm text-[#1E4D58] pt-1 border-t">

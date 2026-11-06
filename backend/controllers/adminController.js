@@ -323,8 +323,12 @@ try {
 // Get storefront/platform status
 getPlatformStatus: async (req, res) => {
   try {
-    let setting = await SystemSetting.findOne({ where: { key: 'storefrontOpen' } });
-    const isOpen = setting ? JSON.parse(setting.value) : true;
+    let [setting] = await SystemSetting.findOrCreate({
+      where: { key: 'storefrontOpen' },
+      defaults: { value: JSON.stringify(true) }
+    });
+    
+    const isOpen = JSON.parse(setting.value);
     return res.status(200).json({ success: true, storefrontOpen: isOpen });
   } catch (error) {
     console.error('Get Status Error:', error);
@@ -337,15 +341,13 @@ updatePlatformStatus: async (req, res) => {
   try {
     const { storefrontOpen } = req.body;
     
-    let [setting, created] = await SystemSetting.findOrCreate({
+    let [setting] = await SystemSetting.findOrCreate({
       where: { key: 'storefrontOpen' },
       defaults: { value: JSON.stringify(storefrontOpen) }
     });
 
-    if (!created) {
-      setting.value = JSON.stringify(storefrontOpen);
-      await setting.save();
-    }
+    setting.value = JSON.stringify(storefrontOpen);
+    await setting.save();
 
     return res.status(200).json({ 
       success: true, 
@@ -357,6 +359,7 @@ updatePlatformStatus: async (req, res) => {
     return res.status(500).json({ success: false, message: 'Failed to update status.' });
   }
 }
+
 
 };
 
