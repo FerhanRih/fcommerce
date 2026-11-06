@@ -4,7 +4,7 @@ const { Op } = require('sequelize');
 const { SystemSetting } = require('../models');
 
 const adminController = {
-  // 1. Comprehensive Dashboard Stats
+  
   getDashboardStats: async (req, res) => {
     try {
       const Order = sequelize.models.Order;
@@ -22,42 +22,45 @@ const adminController = {
         where: { role: { [Op.notIn]: ['admin', 'superadmin', 'staff', 'delivery'] } }
       }) : 0;
 
-     const totalStores = Store ? await Store.count() : 0;
-let pendingStores = 0;
-let activeStores = 0;
+      const totalStores = Store ? await Store.count() : 0;
+      let pendingStores = 0;
+      let activeStores = 0;
 
-try {
-  if (Store) {
-    // Count anything marked pending as waiting approval
-    pendingStores = await Store.count({ 
-      where: { status: 'pending' } 
-    });
-    
-    // Everything else is treated as active/approved
-    activeStores = Math.max(0, totalStores - pendingStores);
-  }
-} catch (e) {
-  pendingStores = 0;
-  activeStores = totalStores;
-}
+      try {
+        if (Store) {
+          pendingStores = await Store.count({ 
+            where: { status: 'pending' } 
+          });
+          activeStores = Math.max(0, totalStores - pendingStores);
+        }
+      } catch (e) {
+        pendingStores = 0;
+        activeStores = totalStores;
+      }
 
       let adBannerRequests = 0;
       let runningAds = 0;
       try {
         if (Banner) {
           adBannerRequests = await Banner.count({ where: { status: 'pending' } });
-          runningAds = await Banner.count({ where: { status: 'active' } });
+          // Check for both 'active' and 'approved' banner statuses to be safe
+          runningAds = await Banner.count({ where: { status: { [Op.in]: ['active', 'approved'] } } });
         }
       } catch (e) {}
 
       const totalOrders = Order ? await Order.count() : 0;
       const pendingRequests = Order ? await Order.count({ where: { status: { [Op.in]: ['pending_merchant', 'pending'] } } }) : 0;
       const waitingPayment = Order ? await Order.count({ where: { status: 'accepted' } }) : 0;
-      const waitingVerification = Order ? await Order.count({ where: { status: 'paid' } }) : 0;
-      const inTransit = Order ? await Order.count({ where: { status: { [Op.in]: ['verified', 'dispatched'] } } }) : 0;
+      
+      // ✅ FIXED: Count orders where receipt is uploaded and waiting for super admin/merchant verification
+      const waitingVerification = Order ? await Order.count({ where: { status: { [Op.in]: ['payment_uploaded', 'paid'] } } }) : 0;
+      
+      // ✅ FIXED: Include 'payment_verified', 'verified', and 'dispatched' in transit/ready counts
+      const inTransit = Order ? await Order.count({ where: { status: { [Op.in]: ['payment_verified', 'verified', 'dispatched'] } } }) : 0;
+      
       const deliveredOrders = Order ? await Order.count({ where: { status: 'delivered' } }) : 0;
       const cancelledOrders = Order ? await Order.count({ 
-        where: { status: { [Op.in]: ['cancelled', 'Cancelled', 'rejected', 'Rejected'] } } 
+        where: { status: { [Op.in]: ['cancelled', 'Cancelled', 'rejected', 'Rejected', 'expired'] } } 
       }) : 0;
 
       return res.status(200).json({
@@ -67,14 +70,14 @@ try {
           staffCount,
           totalCustomers,
           totalStores,
-          activeStores, // 👈 Explicitly pass active count
+          activeStores,
           pendingStores,
           adBannerRequests,
           runningAds,
           totalOrders,
           pendingRequests,
           waitingPayment,
-          waitingVerification,
+          waitingVerification, // 👈 Now correctly counts 'payment_uploaded'
           inTransit,
           deliveredOrders,
           cancelledOrders,

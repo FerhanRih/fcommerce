@@ -19,9 +19,7 @@ export default function TrackOrderPage({ currentUser, onBackToMarketplace }) {
     if (!token) return;
 
     try {
-     
-const response = await API.get(`/orders/user/${currentUser.phone}`);
-const data = response.data;
+      const response = await API.get(`/orders/user/${currentUser.phone}`);
       if (response.data.success) {
         const fetchedOrders = response.data.orders || [];
 
@@ -35,7 +33,7 @@ const data = response.data;
 
               if (ord.status === 'accepted') {
                 title = '🛒 Order Accepted by Merchant!';
-                body = `Order #${ord.id} has been accepted. You can now view bank details and upload your payment receipt.`;
+                body = `Order #${ord.id} has been accepted. You can now view bank details and upload your payment receipt for items.`;
               } else if (ord.status === 'payment_verified') {
                 title = '✅ Payment Verified!';
                 body = `Payment for order #${ord.id} was verified. Ready for store pickup.`;
@@ -88,12 +86,10 @@ const data = response.data;
 
     try {
       const response = await API.put(`/orders/${orderId}/upload-receipt`, formData);
-      const data = response.data;
       
-      if (data.success) {
+      if (response.data && response.data.success) {
         setNotices({ ...notices, [orderId]: '✓ Payment receipt uploaded successfully!' });
         
-        // Trigger notification for uploading receipt
         if ('Notification' in window && Notification.permission === 'granted') {
           new Notification('Receipt Uploaded', {
             body: `Your receipt for order #${orderId} was uploaded successfully.`,
@@ -103,9 +99,10 @@ const data = response.data;
 
         fetchUserOrders();
       } else {
-        setNotices({ ...notices, [orderId]: data.message || 'Failed to upload receipt.' });
+        setNotices({ ...notices, [orderId]: response.data?.message || 'Failed to upload receipt.' });
       }
     } catch (err) {
+      console.error('Upload catch error:', err);
       setNotices({ ...notices, [orderId]: err.response?.data?.message || 'Failed to upload receipt.' });
     } finally {
       setUploadingId(null);
@@ -195,20 +192,21 @@ const data = response.data;
 
                   {(ord.status === 'accepted' || ord.status === 'payment_uploaded') && (
                     <div className="space-y-4 pt-2">
-                      <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold space-y-1">
-                        <div className="flex justify-between">
-                          <span>Product Subtotal:</span>
+                      {/* Price Breakdown showing Subtotal vs Delivery Payable After Delivery */}
+                      <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs space-y-2">
+                        <div className="flex justify-between font-bold">
+                          <span>Items Subtotal (Transfer Now):</span>
                           <span className="text-[#1E4D58] font-black">{Number(ord.subtotal).toLocaleString()} ETB</span>
                         </div>
-                        <div className="flex justify-between text-slate-500">
-                          <span>Delivery Fee (Pay on arrival):</span>
-                          <span>{Number(ord.deliveryFee || 200).toLocaleString()} ETB</span>
+                        <div className="flex justify-between text-slate-600 border-t border-slate-200 pt-2">
+                          <span className="font-semibold">🚚 Delivery Fee (Pay cash on arrival):</span>
+                          <span className="font-extrabold text-amber-800">{Number(ord.deliveryFee || 200).toLocaleString()} ETB</span>
                         </div>
                       </div>
 
                       {/* Bank Accounts */}
                       <div className="space-y-2">
-                        <span className="text-[10px] font-black text-slate-500 uppercase">Merchant Bank Accounts for Transfer:</span>
+                        <span className="text-[10px] font-black text-slate-500 uppercase">Merchant Bank Accounts for Transfer (Items Only):</span>
                         {bankAccounts.length === 0 ? (
                           <p className="text-xs text-amber-700 font-bold">Merchant is setting up accounts...</p>
                         ) : (
@@ -232,7 +230,7 @@ const data = response.data;
                         </div>
                       ) : (
                         <div className="space-y-2 pt-2 border-t">
-                          <label className="text-[10px] font-black text-slate-700 uppercase block">Upload Transfer Receipt Screenshot</label>
+                          <label className="text-[10px] font-black text-slate-700 uppercase block">Upload Transfer Receipt Screenshot (Items Total)</label>
                           <input
                             type="file"
                             accept="image/*"
@@ -263,7 +261,7 @@ const data = response.data;
                   {ord.status === 'dispatched' && (
                     <div className="p-4 bg-sky-50 border border-sky-200 rounded-2xl text-center space-y-1 animate-pulse">
                       <span className="text-xs font-black text-sky-900 block">🚚 Driver is In Transit!</span>
-                      <p className="text-[11px] text-sky-700">Your delivery courier is on the way to your drop-off address.</p>
+                      <p className="text-[11px] text-sky-700">Your courier is on the way. Have your delivery fee cash ({Number(ord.deliveryFee || 200).toLocaleString()} ETB) ready for arrival.</p>
                     </div>
                   )}
 

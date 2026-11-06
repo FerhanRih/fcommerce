@@ -74,33 +74,39 @@ function App() {
   // ALL useEffect HOOKS (Unconditional Order)
   // ==========================================
 useEffect(() => {
-    // 1. Register the Service Worker in the background
+    // 1. Register Service Worker
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker
         .register('/sw.js')
-        .then((reg) => {
-          console.log('✅ Service Worker registered with scope:', reg.scope);
-        })
-        .catch((err) => {
-          console.error('❌ Service Worker registration failed:', err);
-        });
+        .then((reg) => console.log('✅ Service Worker registered:', reg.scope))
+        .catch((err) => console.error('❌ Service Worker failed:', err));
     }
 
-    // 2. Poll/Check for new broadcast notifications every 5 seconds
+    // Request notification permission on load
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
+    // 2. Poll for new broadcast notifications every 10 seconds
     const interval = setInterval(async () => {
       try {
-        const response = await API.get('/admin/broadcast-client');
+        const response = await API.get('/api/admin/broadcast-client'); // Ensure route matches backend
         const data = response.data;
 
         if (data.success && data.broadcasts && data.broadcasts.length > 0) {
           const latestBroadcast = data.broadcasts[0];
           const lastSeenId = localStorage.getItem('last_seen_broadcast_id');
 
-          // If this is a new broadcast the user hasn't seen yet
-          if (String(latestBroadcast.id) !== lastSeenId) {
+          // If first time loaded, initialize storage to current latest ID without spamming old notification
+          if (!lastSeenId) {
+            localStorage.setItem('last_seen_broadcast_id', String(latestBroadcast.id));
+            return;
+          }
+
+          // If a genuinely new broadcast arrives
+          if (String(latestBroadcast.id) !== String(lastSeenId)) {
             localStorage.setItem('last_seen_broadcast_id', String(latestBroadcast.id));
 
-            // Trigger native browser notification
             if ('Notification' in window && Notification.permission === 'granted') {
               new Notification('FCOMMERCE Announcement', {
                 body: latestBroadcast.message,
@@ -111,9 +117,9 @@ useEffect(() => {
           }
         }
       } catch (err) {
-        // Silently handle offline/network checks
+        // Silently handle network checks when offline
       }
-    }, 5000);
+    }, 10000); // 10 seconds is optimal for polling without overloading server
 
     return () => clearInterval(interval);
   }, []);

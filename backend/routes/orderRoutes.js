@@ -318,7 +318,7 @@ router.put('/:id/merchant-response', protect, async (req, res) => {
     return res.status(500).json({ success: false, message: `Server Error: ${error.message}` });
   }
 });
-// 4. User Bank Transfer Receipt Upload
+// 1. Bank Transfer Receipt Upload
 router.put('/:id/upload-receipt', protect, upload.single('receipt'), async (req, res) => {
   try {
     const order = await Order.findByPk(req.params.id);
@@ -337,6 +337,7 @@ router.put('/:id/upload-receipt', protect, upload.single('receipt'), async (req,
       status: 'payment_uploaded',
     });
 
+    // Explicitly return 200 OK with success: true
     return res.status(200).json({
       success: true,
       message: 'Receipt uploaded successfully. Order is pending merchant verification.',
@@ -344,14 +345,11 @@ router.put('/:id/upload-receipt', protect, upload.single('receipt'), async (req,
     });
   } catch (error) {
     console.error('Receipt Upload Error:', error);
-    return res.status(500).json({ success: false, message: 'Failed to upload receipt screenshot' });
+    return res.status(500).json({ success: false, message: error.message || 'Failed to upload receipt screenshot' });
   }
 });
 
-// Helper function to generate a 4-digit PIN
-const generatePin = () => Math.floor(1000 + Math.random() * 9000).toString();
-
-// 5. Verify Payment & Approve Dispatch (Auto-generates 4-Digit Delivery PIN)
+// 2. Verify Payment & Approve Dispatch
 router.put('/:id/verify-payment', protect, async (req, res) => {
   try {
     const { status } = req.body;
@@ -361,15 +359,14 @@ router.put('/:id/verify-payment', protect, async (req, res) => {
     }
 
     const nextStatus = status || 'payment_verified';
-    
-    // Auto-generate PIN if verifying payment and PIN does not exist yet
-    const deliveryPin = order.deliveryPin || generatePin();
+    const deliveryPin = order.deliveryPin || Math.floor(1000 + Math.random() * 9000).toString();
 
     await order.update({ 
       status: nextStatus,
       deliveryPin: deliveryPin
     });
 
+    // Explicitly return 200 OK with success: true
     return res.status(200).json({
       success: true,
       message: 'Payment verified successfully.',
@@ -377,10 +374,9 @@ router.put('/:id/verify-payment', protect, async (req, res) => {
     });
   } catch (error) {
     console.error('Payment Verification Error:', error);
-    return res.status(500).json({ success: false, message: 'Failed to verify payment.' });
+    return res.status(500).json({ success: false, message: error.message || 'Failed to verify payment.' });
   }
 });
-
 // 6. Update General Order Status (e.g. Delivered with PIN Verification)
 router.put('/:id/status', protect, async (req, res) => {
   try {

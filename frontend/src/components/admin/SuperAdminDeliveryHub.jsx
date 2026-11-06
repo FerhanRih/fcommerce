@@ -380,29 +380,42 @@ const data = response.data;
                     </div>
 
                     {/* CUSTOMER DROP-OFF LOCATION */}
-                    <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-1.5 min-w-0">
-                      <div className="flex items-center space-x-2 text-emerald-700">
-                        <User className="w-4 h-4 shrink-0" />
-                        <span className="font-black uppercase text-[10px] tracking-wider">2. Drop-Off Destination (Buyer)</span>
-                      </div>
-                      <p className="font-extrabold text-slate-900 break-words">{customer.name || 'Customer Name'}</p>
-                      <div className="text-slate-700 break-words flex items-start gap-1">
-                        <Navigation className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-                        <span className="break-all break-words"><strong>Delivery Address:</strong> {order.deliveryAddress || customer.address || 'Address not specified'}</span>
-                      </div>
-                      <p className="text-slate-800 font-mono font-bold">Phone: {customerPhone}</p>
+<div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-1.5 min-w-0">
+  <div className="flex items-center space-x-2 text-emerald-700">
+    <User className="w-4 h-4 shrink-0" />
+    <span className="font-black uppercase text-[10px] tracking-wider">2. Drop-Off Destination (Buyer)</span>
+  </div>
+  <p className="font-extrabold text-slate-900 break-words">{customer.name || 'Customer Name'}</p>
+  
+  <div className="text-slate-700 break-words flex items-start gap-1">
+    <Navigation className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+    <span className="break-words">
+      <strong>Delivery Address:</strong> {
+        (() => {
+          const addr = order.deliveryAddress || customer.address;
+          if (!addr) return 'Address not specified';
+          if (typeof addr === 'object') {
+            return [addr.subcity, addr.woreda, addr.specificArea || addr.notes].filter(Boolean).join(', ') || 'Address details provided';
+          }
+          return String(addr);
+        })()
+      }
+    </span>
+  </div>
+  
+  <p className="text-slate-800 font-mono font-bold">Phone: {customerPhone}</p>
 
-                      <button
-                        onClick={() => handleSendSMS(
-                          customerPhone,
-                          `[FCOMMERCE DISPATCH] Driver is en route with your Order #${order.id}! Your Secure Delivery PIN is: ${order.deliveryPin || 'XXXX'}`
-                        )}
-                        className="mt-2 w-full py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-[11px] rounded-lg flex items-center justify-center gap-1 cursor-pointer"
-                      >
-                        <PhoneCall className="w-3 h-3 text-emerald-700 shrink-0" />
-                        <span>SMS Delivery Alert & PIN to Customer</span>
-                      </button>
-                    </div>
+  <button
+    onClick={() => handleSendSMS(
+      customerPhone,
+      `[FCOMMERCE DISPATCH] Driver is en route with your Order #${order.id}! Your Secure Delivery PIN is: ${order.deliveryPin || 'XXXX'}`
+    )}
+    className="mt-2 w-full py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-[11px] rounded-lg flex items-center justify-center gap-1 cursor-pointer"
+  >
+    <PhoneCall className="w-3 h-3 text-emerald-700 shrink-0" />
+    <span>SMS Delivery Alert & PIN to Customer</span>
+  </button>
+</div>
 
                   </div>
 
