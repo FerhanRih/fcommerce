@@ -52,11 +52,9 @@ const SuperAdminDeliveryHub = () => {
   const fetchDeliveryOrders = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      
-const response = await API.get(`/admin/delivery-orders?deliveryStatus=${filter}`);
-const data = response.data;
-      if (data.success) {
+      const response = await API.get(`/admin/delivery-orders?deliveryStatus=${filter}`);
+      const data = response?.data;
+      if (data && (data.success === true || data.success === 'true')) {
         const fetchedOrders = data.orders || [];
         setOrders(fetchedOrders);
         checkAndNotifyDeliveries(fetchedOrders);
@@ -78,13 +76,13 @@ const data = response.data;
 
   const updateStatus = async (orderId, newStatus, pin = null) => {
     try {
-      const token = localStorage.getItem('token');
-    const response = await API.put(`/admin/delivery-orders/${orderId}/status`, {
-  status: newStatus,
-  pin
-});
-const data = response.data;
-      if (data.success) {
+      const response = await API.put(`/admin/delivery-orders/${orderId}/status`, {
+        status: newStatus,
+        pin
+      });
+      const data = response?.data;
+
+      if (data && (data.success === true || data.success === 'true')) {
         showToast(`Order #${orderId} marked as ${newStatus.toUpperCase()}!`);
         
         // Notify Super Admin on successful status transition
@@ -99,11 +97,12 @@ const data = response.data;
         setInputPin('');
         fetchDeliveryOrders();
       } else {
-        alert(data.message || 'Failed to update status.');
+        showToast(data?.message || 'Failed to update status.');
       }
     } catch (error) {
       console.error('Update Delivery Error:', error);
-      alert('Network error while updating delivery status.');
+      const errorMsg = error.response?.data?.message || error.message || 'Network error while updating delivery status.';
+      showToast(errorMsg);
     }
   };
 
@@ -380,42 +379,42 @@ const data = response.data;
                     </div>
 
                     {/* CUSTOMER DROP-OFF LOCATION */}
-<div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-1.5 min-w-0">
-  <div className="flex items-center space-x-2 text-emerald-700">
-    <User className="w-4 h-4 shrink-0" />
-    <span className="font-black uppercase text-[10px] tracking-wider">2. Drop-Off Destination (Buyer)</span>
-  </div>
-  <p className="font-extrabold text-slate-900 break-words">{customer.name || 'Customer Name'}</p>
-  
-  <div className="text-slate-700 break-words flex items-start gap-1">
-    <Navigation className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-    <span className="break-words">
-      <strong>Delivery Address:</strong> {
-        (() => {
-          const addr = order.deliveryAddress || customer.address;
-          if (!addr) return 'Address not specified';
-          if (typeof addr === 'object') {
-            return [addr.subcity, addr.woreda, addr.specificArea || addr.notes].filter(Boolean).join(', ') || 'Address details provided';
-          }
-          return String(addr);
-        })()
-      }
-    </span>
-  </div>
-  
-  <p className="text-slate-800 font-mono font-bold">Phone: {customerPhone}</p>
+                    <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-1.5 min-w-0">
+                      <div className="flex items-center space-x-2 text-emerald-700">
+                        <User className="w-4 h-4 shrink-0" />
+                        <span className="font-black uppercase text-[10px] tracking-wider">2. Drop-Off Destination (Buyer)</span>
+                      </div>
+                      <p className="font-extrabold text-slate-900 break-words">{customer.name || 'Customer Name'}</p>
+                      
+                      <div className="text-slate-700 break-words flex items-start gap-1">
+                        <Navigation className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                        <span className="break-words">
+                          <strong>Delivery Address:</strong> {
+                            (() => {
+                              const addr = order.deliveryAddress || customer.address;
+                              if (!addr) return 'Address not specified';
+                              if (typeof addr === 'object') {
+                                return [addr.subcity, addr.woreda, addr.specificArea || addr.notes].filter(Boolean).join(', ') || 'Address details provided';
+                              }
+                              return String(addr);
+                            })()
+                          }
+                        </span>
+                      </div>
+                      
+                      <p className="text-slate-800 font-mono font-bold">Phone: {customerPhone}</p>
 
-  <button
-    onClick={() => handleSendSMS(
-      customerPhone,
-      `[FCOMMERCE DISPATCH] Driver is en route with your Order #${order.id}! Your Secure Delivery PIN is: ${order.deliveryPin || 'XXXX'}`
-    )}
-    className="mt-2 w-full py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-[11px] rounded-lg flex items-center justify-center gap-1 cursor-pointer"
-  >
-    <PhoneCall className="w-3 h-3 text-emerald-700 shrink-0" />
-    <span>SMS Delivery Alert & PIN to Customer</span>
-  </button>
-</div>
+                      <button
+                        onClick={() => handleSendSMS(
+                          customerPhone,
+                          `[FCOMMERCE DISPATCH] Driver is en route with your Order #${order.id}! Your Secure Delivery PIN is: ${order.deliveryPin || 'XXXX'}`
+                        )}
+                        className="mt-2 w-full py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-[11px] rounded-lg flex items-center justify-center gap-1 cursor-pointer"
+                      >
+                        <PhoneCall className="w-3 h-3 text-emerald-700 shrink-0" />
+                        <span>SMS Delivery Alert & PIN to Customer</span>
+                      </button>
+                    </div>
 
                   </div>
 

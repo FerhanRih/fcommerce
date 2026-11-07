@@ -10,8 +10,15 @@ const bcrypt = require('bcryptjs');
 // 1. Initialize Express app FIRST
 const app = express();
 
-// Global Middleware
-app.use(cors());
+
+app.use(cors({
+  origin: '*', 
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: true
+}));
+
+app.options('*', cors()); 
 app.use(express.json());
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

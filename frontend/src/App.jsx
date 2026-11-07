@@ -90,7 +90,8 @@ useEffect(() => {
     // 2. Poll for new broadcast notifications every 10 seconds
     const interval = setInterval(async () => {
       try {
-        const response = await API.get('/api/admin/broadcast-client'); // Ensure route matches backend
+        // CORRECT: Axios baseURL handles /api automatically!
+const response = await API.get('/admin/broadcast-client');
         const data = response.data;
 
         if (data.success && data.broadcasts && data.broadcasts.length > 0) {

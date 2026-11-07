@@ -1,7 +1,5 @@
-// frontend/src/components/TrackOrderPage.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
-import API from '../services/api';
+import API, { API_URL } from '../services/api';
 
 export default function TrackOrderPage({ currentUser, onBackToMarketplace }) {
   const [orders, setOrders] = useState([]);
@@ -20,7 +18,7 @@ export default function TrackOrderPage({ currentUser, onBackToMarketplace }) {
 
     try {
       const response = await API.get(`/orders/user/${currentUser.phone}`);
-      if (response.data.success) {
+      if (response && response.data && response.data.success) {
         const fetchedOrders = response.data.orders || [];
 
         // Check for status updates and trigger browser notifications
@@ -76,7 +74,7 @@ export default function TrackOrderPage({ currentUser, onBackToMarketplace }) {
   const handleUploadReceipt = async (orderId) => {
     const file = receiptFiles[orderId];
     if (!file) {
-      setNotices({ ...notices, [orderId]: 'Please select a payment receipt image first.' });
+      setNotices((prev) => ({ ...prev, [orderId]: 'Please select a payment receipt image first.' }));
       return;
     }
 
@@ -87,8 +85,8 @@ export default function TrackOrderPage({ currentUser, onBackToMarketplace }) {
     try {
       const response = await API.put(`/orders/${orderId}/upload-receipt`, formData);
       
-      if (response.data && response.data.success) {
-        setNotices({ ...notices, [orderId]: '✓ Payment receipt uploaded successfully!' });
+      if (response && response.data && (response.data.success === true || response.data.success === 'true')) {
+        setNotices((prev) => ({ ...prev, [orderId]: '✓ Payment receipt uploaded successfully!' }));
         
         if ('Notification' in window && Notification.permission === 'granted') {
           new Notification('Receipt Uploaded', {
@@ -97,13 +95,19 @@ export default function TrackOrderPage({ currentUser, onBackToMarketplace }) {
           });
         }
 
-        fetchUserOrders();
+        try {
+          await fetchUserOrders();
+        } catch (fetchErr) {
+          console.warn('Background order refresh after upload:', fetchErr);
+        }
       } else {
-        setNotices({ ...notices, [orderId]: response.data?.message || 'Failed to upload receipt.' });
+        const errorMsg = response?.data?.message || 'Failed to upload receipt.';
+        setNotices((prev) => ({ ...prev, [orderId]: errorMsg }));
       }
     } catch (err) {
       console.error('Upload catch error:', err);
-      setNotices({ ...notices, [orderId]: err.response?.data?.message || 'Failed to upload receipt.' });
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to upload receipt.';
+      setNotices((prev) => ({ ...prev, [orderId]: errorMsg }));
     } finally {
       setUploadingId(null);
     }
@@ -150,6 +154,10 @@ export default function TrackOrderPage({ currentUser, onBackToMarketplace }) {
               const items = parseItems(ord.items);
               const notice = notices[ord.id];
 
+              const receiptImageUrl = ord.paymentReceiptUrl 
+                ? (ord.paymentReceiptUrl.startsWith('http') ? ord.paymentReceiptUrl : `${API_URL}${ord.paymentReceiptUrl}`)
+                : null;
+
               return (
                 <div key={ord.id} className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
                   {/* Header */}
@@ -190,7 +198,7 @@ export default function TrackOrderPage({ currentUser, onBackToMarketplace }) {
                     </div>
                   )}
 
-                  {(ord.status === 'accepted' || ord.status === 'payment_uploaded') && (
+                  {(ord.status === 'accepted' || ord.status === 'payment_uploaded' || ord.status === 'payment_verified') && (
                     <div className="space-y-4 pt-2">
                       {/* Price Breakdown showing Subtotal vs Delivery Payable After Delivery */}
                       <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs space-y-2">
@@ -224,11 +232,26 @@ export default function TrackOrderPage({ currentUser, onBackToMarketplace }) {
                         )}
                       </div>
 
+                      {/* Uploaded Receipt Preview */}
+                      {receiptImageUrl && (
+                        <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+                          <span className="text-[10px] font-black text-slate-500 uppercase block">Uploaded Payment Receipt:</span>
+                          <a href={receiptImageUrl} target="_blank" rel="noopener noreferrer">
+                            <img
+                              src={receiptImageUrl}
+                              alt="Payment Receipt"
+                              className="w-full h-36 object-cover rounded-xl border border-slate-200 hover:opacity-95 transition cursor-zoom-in"
+                            />
+                          </a>
+                          <span className="text-[10px] text-slate-400 block text-center">Click image to view full size</span>
+                        </div>
+                      )}
+
                       {ord.status === 'payment_uploaded' ? (
                         <div className="p-3 bg-blue-50 border border-blue-200 rounded-2xl text-xs font-bold text-blue-900 text-center">
                           ✓ Payment Receipt Uploaded. Waiting for merchant verification & dispatch.
                         </div>
-                      ) : (
+                      ) : ord.status === 'accepted' ? (
                         <div className="space-y-2 pt-2 border-t">
                           <label className="text-[10px] font-black text-slate-700 uppercase block">Upload Transfer Receipt Screenshot (Items Total)</label>
                           <input
@@ -245,7 +268,7 @@ export default function TrackOrderPage({ currentUser, onBackToMarketplace }) {
                             {uploadingId === ord.id ? 'Uploading...' : 'Confirm & Send Receipt'}
                           </button>
                         </div>
-                      )}
+                      ) : null}
                     </div>
                   )}
 

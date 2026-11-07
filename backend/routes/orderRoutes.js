@@ -6,26 +6,24 @@ const upload = require('../middleware/uploadMiddleware'); // Multer config
 const { protect } = require('../middleware/authMiddleware');
 const fs = require('fs');
 const path = require('path');
+const { SystemSetting } = require('../models');
 
-// Helper to check if platform is open for orders
-const getPlatformStatus = () => {
+const getPlatformStatus = async () => {
   try {
-    const settingsPath = path.join(__dirname, '../data/platformSettings.json');
-    if (fs.existsSync(settingsPath)) {
-      const data = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-      return data.storefrontOpen !== false; // defaults to true if not explicitly set to false
+    const setting = await SystemSetting.findOne({ where: { key: 'storefrontOpen' } });
+    if (setting) {
+      return JSON.parse(setting.value);
     }
   } catch (e) {
-    console.error('Error reading platform settings:', e);
+    console.error('Error reading platform settings from DB:', e);
   }
   return true; // default open
 };
-
 // 0.2 Request Order Endpoint with Multi-Merchant Cart Splitting & Platform Kill-Switch
 router.post('/request', protect, async (req, res) => {
   try {
-    // 🛑 KILL-SWITCH CHECK: Block orders if platform is toggled OFF for maintenance
-    if (!getPlatformStatus()) {
+    const isPlatformOpen = await getPlatformStatus();
+    if (!isPlatformOpen) {
       return res.status(503).json({
         success: false,
         message: '⚠️ F-COMMERCE is currently undergoing scheduled maintenance or order capacity optimization. New orders are temporarily paused. Please check back shortly!'

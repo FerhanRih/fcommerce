@@ -38,7 +38,7 @@ export default function OrdersTab({ currentStore, setActiveStoreTab }) {
       const response = await API.get(`/orders/vendor/${currentStore.id}`);
       console.log('📦 MERCHANT FETCH SUCCESS -> Response data:', response.data);
       
-      if (response.data.success) {
+      if (response && response.data && response.data.success) {
         const fetchedOrders = response.data.orders || [];
         
         const newPending = fetchedOrders.filter((o) => o?.status === 'pending_merchant');
@@ -91,7 +91,7 @@ export default function OrdersTab({ currentStore, setActiveStoreTab }) {
         adjustedItems: itemQuantitiesMap,
       });
 
-      if (response.data.success) {
+      if (response && response.data && (response.data.success === true || response.data.success === 'true')) {
         setNotice(`✓ Order ${action}ed successfully.`);
         setTimeout(() => setNotice(''), 3000);
         setSelectedOrder(null);
@@ -106,7 +106,13 @@ export default function OrdersTab({ currentStore, setActiveStoreTab }) {
           });
         }
 
-        fetchStoreOrders();
+        try {
+          await fetchStoreOrders();
+        } catch (fetchErr) {
+          console.warn('Background order refresh error:', fetchErr);
+        }
+      } else {
+        setNotice(response?.data?.message || 'Failed to process request.');
       }
     } catch (err) {
       console.error('Error processing request:', err);
@@ -116,41 +122,44 @@ export default function OrdersTab({ currentStore, setActiveStoreTab }) {
           setActiveStoreTab('bank-settings');
         }
       } else {
-        setNotice(err.response?.data?.message || 'Failed to process request.');
+        setNotice(err.response?.data?.message || err.message || 'Failed to process request.');
       }
     }
   };
 
   // 3. Confirm Payment Receipt
-const handleVerifyPayment = async (orderId) => {
-  try {
-    const paymentResponse = await API.put(`/orders/${orderId}/verify-payment`, { 
-      status: 'payment_verified' 
-    });
+  const handleVerifyPayment = async (orderId) => {
+    try {
+      const paymentResponse = await API.put(`/orders/${orderId}/verify-payment`, { 
+        status: 'payment_verified' 
+      });
 
-    const data = paymentResponse.data;
+      const data = paymentResponse?.data;
 
-    if (data && data.success) {
-      setNotice('✓ Payment verified! Order marked for dispatch.');
-      setTimeout(() => setNotice(''), 3000);
+      if (data && (data.success === true || data.success === 'true')) {
+        setNotice('✓ Payment verified! Order marked for dispatch.');
+        setTimeout(() => setNotice(''), 3000);
 
-      if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('Payment Verified & Dispatched', {
-          body: `Payment for order #${orderId} has been verified successfully.`,
-          icon: '/logo.png'
-        });
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('Payment Verified & Dispatched', {
+            body: `Payment for order #${orderId} has been verified successfully.`,
+            icon: '/logo.png'
+          });
+        }
+
+        try {
+          await fetchStoreOrders();
+        } catch (fetchErr) {
+          console.warn('Background order refresh after verify:', fetchErr);
+        }
+      } else {
+        setNotice(data?.message || 'Failed to verify payment.');
       }
-
-      fetchStoreOrders();
-    } else {
-      setNotice(data?.message || 'Failed to verify payment.');
+    } catch (err) {
+      console.error('Payment verification error:', err);
+      setNotice(err.response?.data?.message || err.message || 'Failed to verify payment.');
     }
-  } catch (err) {
-    console.error('Payment verification error:', err);
-    // Display the exact error message sent from the backend if available
-    setNotice(err.response?.data?.message || 'Failed to verify payment.');
-  }
-};
+  };
 
   useEffect(() => {
     fetchStoreOrders();
@@ -361,7 +370,6 @@ const handleVerifyPayment = async (orderId) => {
               <div key={ord.id} className="bg-white border border-slate-200 rounded-3xl p-5 space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-black text-slate-900">Order #{ord.id}</span>
-                  {/* Merchant sees product revenue only, no delivery fee */}
                   <div className="text-right">
                     <span className="text-xs font-black text-[#1E4D58] block">
                       Products Total: {Number(ord.subtotal || 0).toLocaleString()} ETB

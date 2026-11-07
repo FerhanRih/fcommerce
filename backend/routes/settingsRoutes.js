@@ -1,40 +1,26 @@
-// backend/routes/deliverySettingsRoutes.js (or backend/routes/settingsRoutes.js)
 const express = require('express');
 const router = express.Router();
-const fs = require('fs');
-const path = require('path');
 const { getDeliveryFees, updateDeliveryFees } = require('../controllers/deliverySettingsController');
-const { protect } = require('../middleware/authMiddleware');
-
-// Path to store settings JSON safely in backend/data/
-const settingsFilePath = path.join(__dirname, '../data/platformSettings.json');
-
-// Helper function to read platform status safely without crashing
-const readPlatformStatus = () => {
-  try {
-    if (fs.existsSync(settingsFilePath)) {
-      const rawData = fs.readFileSync(settingsFilePath, 'utf8');
-      const parsed = JSON.parse(rawData);
-      return parsed.storefrontOpen !== false;
-    }
-  } catch (err) {
-    console.error('Error reading platformSettings.json:', err.message);
-  }
-  return true; // Default open
-};
+const { protect, requireAdmin } = require('../middleware/authMiddleware');
+const { SystemSetting } = require('../models');
 
 // Existing Delivery Fees Routes
 router.get('/delivery-fees', getDeliveryFees);
 router.put('/delivery-fees', protect, updateDeliveryFees);
 
 // -------------------------------------------------------------
-// NEW: Platform Status Kill-Switch Endpoints
+// DATABASE-BACKED PLATFORM STATUS KILL-SWITCH ENDPOINTS
 // -------------------------------------------------------------
 
 // 1. GET /api/settings/platform-status
-router.get('/platform-status', (req, res) => {
+router.get('/platform-status', async (req, res) => {
   try {
-    const storefrontOpen = readPlatformStatus();
+    let [setting] = await SystemSetting.findOrCreate({
+      where: { key: 'storefrontOpen' },
+      defaults: { value: JSON.stringify(true) }
+    });
+    
+    const storefrontOpen = JSON.parse(setting.value);
     return res.status(200).json({
       success: true,
       storefrontOpen
@@ -49,18 +35,17 @@ router.get('/platform-status', (req, res) => {
 });
 
 // 2. PUT /api/settings/platform-status (Super Admin Toggle)
-router.put('/platform-status', protect, (req, res) => {
+router.put('/platform-status', protect, requireAdmin, async (req, res) => {
   try {
     const { storefrontOpen } = req.body;
     
-    // Auto-create data directory if missing
-    const dir = path.dirname(settingsFilePath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
+    let [setting] = await SystemSetting.findOrCreate({
+      where: { key: 'storefrontOpen' },
+      defaults: { value: JSON.stringify(Boolean(storefrontOpen)) }
+    });
 
-    const payload = { storefrontOpen: Boolean(storefrontOpen) };
-    fs.writeFileSync(settingsFilePath, JSON.stringify(payload, null, 2), 'utf8');
+    setting.value = JSON.stringify(Boolean(storefrontOpen));
+    await setting.save();
 
     return res.status(200).json({
       success: true,

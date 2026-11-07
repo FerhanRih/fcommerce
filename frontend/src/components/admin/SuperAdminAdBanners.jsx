@@ -180,7 +180,7 @@ const data = response.data;
           <p className="text-xs text-slate-500 font-medium mt-0.5">Manage live ads, review vendor applications, and maintain payment deposit accounts.</p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button onClick={() => setShowCreateModal(true)} className="px-4 py-2.5 bg-[#1E4D58] hover:bg-[#163C45] text-white font-black text-xs rounded-xl flex items-center gap-1.5 cursor-pointer shadow-sm">
             <Plus className="w-4 h-4" />
             <span>Create House Ad</span>
@@ -188,6 +188,10 @@ const data = response.data;
           <button onClick={() => setShowAccountModal(true)} className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs rounded-xl flex items-center gap-1.5 cursor-pointer">
             <DollarSign className="w-4 h-4" />
             <span>Manage Payment Accounts</span>
+          </button>
+          <button onClick={() => setShowPackageModal(true)} className="px-4 py-2.5 bg-amber-100 hover:bg-amber-200 text-amber-900 font-black text-xs rounded-xl flex items-center gap-1.5 cursor-pointer">
+            <Clock className="w-4 h-4" />
+            <span>Edit Ad Packages (Prices & Days)</span>
           </button>
           <button onClick={fetchBanners} className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl cursor-pointer">
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -351,6 +355,46 @@ const data = response.data;
               <button type="submit" className="flex-2 py-3 bg-[#1E4D58] text-white rounded-xl font-black text-xs cursor-pointer">Save Account</button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* EDIT AD PACKAGES MODAL */}
+      {showPackageModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl p-6 max-w-xl w-full space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center border-b pb-3">
+              <h3 className="text-sm font-black text-slate-900">Manage Advertising Packages (Prices & Durations)</h3>
+              <button onClick={() => setShowPackageModal(false)} className="text-slate-400 hover:text-slate-700 font-bold">✕</button>
+            </div>
+            
+            <div className="space-y-3">
+              {adPackages.map((pkg) => (
+                <div key={pkg.id} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div>
+                    <h4 className="font-black text-slate-900 text-xs">{pkg.name}</h4>
+                    <p className="text-[11px] text-slate-500 font-semibold">{pkg.days} Days • {pkg.price.toLocaleString()} ETB</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const newPrice = prompt(`Enter new price for ${pkg.name} (ETB):`, pkg.price);
+                      const newDays = prompt(`Enter new duration days for ${pkg.name}:`, pkg.days);
+                      if (newPrice !== null && newDays !== null) {
+                        setAdPackages(adPackages.map(p => p.id === pkg.id ? { ...p, price: Number(newPrice) || p.price, days: Number(newDays) || p.days } : p));
+                        showToast(`Package "${pkg.name}" updated successfully!`);
+                      }
+                    }}
+                    className="px-3 py-1.5 bg-[#1E4D58] text-white font-black text-[11px] rounded-xl cursor-pointer"
+                  >
+                    Edit Package
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <button onClick={() => setShowPackageModal(false)} className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs rounded-xl cursor-pointer">
+              Close & Save
+            </button>
+          </div>
         </div>
       )}
 

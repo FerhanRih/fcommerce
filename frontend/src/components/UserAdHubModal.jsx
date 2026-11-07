@@ -3,12 +3,15 @@ import React, { useState, useEffect } from 'react';
 import { Megaphone, Upload, CheckCircle2, XCircle, Clock, ShieldCheck, Plus, ArrowLeft } from 'lucide-react';
 import API from '../services/api';
 
-const PACKAGES = [
-  { id: 1, name: '3-Day Flash Spotlight', days: 3, price: 1500 },
-  { id: 2, name: '7-Day Prime Carousel', days: 7, price: 3000 },
-  { id: 3, name: '30-Day Super Dominance', days: 30, price: 10000 }
-];
-
+// Ad Packages Configuration State (matches PACKAGES in UserAdHubModal)
+  const [adPackages, setAdPackages] = useState([
+    { id: 1, name: '3-Day Flash Spotlight', days: 3, price: 1500 },
+    { id: 2, name: '7-Day Prime Carousel', days: 7, price: 3000 },
+    { id: 3, name: '30-Day Super Dominance', days: 30, price: 10000 }
+  ]);
+  const [showPackageModal, setShowPackageModal] = useState(false);
+  const [selectedPkgToEdit, setSelectedPkgToEdit] = useState(null);
+  
 export default function UserAdHubModal({ onClose }) {
   const [view, setView] = useState('list'); // 'list' | 'create'
   const [myBanners, setMyBanners] = useState([]);
