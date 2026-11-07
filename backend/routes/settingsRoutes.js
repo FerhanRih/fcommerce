@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDeliveryFees, updateDeliveryFees } = require('../controllers/deliverySettingsController');
-const { protect, requireAdmin } = require('../middleware/authMiddleware');
+const { protect, authorize } = require('../middleware/authMiddleware');
 const { SystemSetting } = require('../models');
 
 // Existing Delivery Fees Routes
@@ -35,7 +35,7 @@ router.get('/platform-status', async (req, res) => {
 });
 
 // 2. PUT /api/settings/platform-status (Super Admin Toggle)
-router.put('/platform-status', protect, requireAdmin, async (req, res) => {
+router.put('/platform-status', protect, authorize('superadmin'), async (req, res) => {
   try {
     const { storefrontOpen } = req.body;
     
