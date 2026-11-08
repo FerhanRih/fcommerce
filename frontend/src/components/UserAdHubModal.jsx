@@ -1,9 +1,9 @@
 // frontend/src/components/UserAdHubModal.jsx
 import React, { useState, useEffect } from 'react';
-import { Megaphone, Upload, CheckCircle2, XCircle, Clock, ShieldCheck, Plus, ArrowLeft } from 'lucide-react';
-import API from '../services/api';
+import { Megaphone, Upload, CheckCircle2, XCircle, Clock, ShieldCheck, Plus, ArrowLeft, Eye } from 'lucide-react';
+import API, { API_URL } from '../services/api';
 
-// Static Ad Packages Configuration constant (not a hook)
+// Static Ad Packages Configuration constant
 const PACKAGES = [
   { id: 1, name: '3-Day Flash Spotlight', days: 3, price: 1500 },
   { id: 2, name: '7-Day Prime Carousel', days: 7, price: 3000 },
@@ -11,12 +11,14 @@ const PACKAGES = [
 ];
 
 export default function UserAdHubModal({ onClose }) {
-  // All hooks correctly placed INSIDE the component body
   const [view, setView] = useState('list'); // 'list' | 'create'
   const [myBanners, setMyBanners] = useState([]);
   const [paymentAccounts, setPaymentAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState('');
+
+  // Image Preview Modal State
+  const [previewImage, setPreviewImage] = useState(null);
 
   // Form State
   const [selectedPkg, setSelectedPkg] = useState(PACKAGES[0]);
@@ -32,20 +34,23 @@ export default function UserAdHubModal({ onClose }) {
     setTimeout(() => setToast(''), 3500);
   };
 
+  // Helper to safely resolve image paths using your imported API_URL
+  const getImageUrl = (path) => {
+    if (!path) return '';
+    if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:')) return path;
+    return `${API_URL}${path.startsWith('/') ? '' : '/'}${path}`;
+  };
+
   const fetchMyData = async () => {
     try {
       setLoading(true);
-      
       const [bannersRes, accountsRes] = await Promise.all([
         API.get('/banners/my-campaigns'),
         API.get('/admin/payment-accounts')
       ]);
       
-      const bannersData = bannersRes.data;
-      const accountsData = accountsRes.data;
-      
-      if (Array.isArray(bannersData)) setMyBanners(bannersData);
-      if (accountsData.success) setPaymentAccounts(accountsData.accounts || []);
+      if (Array.isArray(bannersRes.data)) setMyBanners(bannersRes.data);
+      if (accountsRes.data.success) setPaymentAccounts(accountsRes.data.accounts || []);
     } catch (err) {
       console.error('Error fetching user campaigns:', err);
     } finally {
@@ -77,8 +82,7 @@ export default function UserAdHubModal({ onClose }) {
       
     try {
       const response = await API.post('/banners/submit', formData);
-      const data = response.data;
-      if (data.success) {
+      if (response.data.success) {
         showToast('Ad campaign request submitted successfully!');
         setTitle('');
         setSubtitle('');
@@ -87,7 +91,7 @@ export default function UserAdHubModal({ onClose }) {
         setView('list');
         fetchMyData();
       } else {
-        showToast(data.message || 'Failed to submit campaign.');
+        showToast(response.data.message || 'Failed to submit campaign.');
       }
     } catch (err) {
       showToast('Network error during ad submission.');
@@ -175,13 +179,21 @@ export default function UserAdHubModal({ onClose }) {
                           <span className="text-xs font-black text-[#1E4D58]">{ad.price} ETB</span>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600">
+                        <div className="flex items-center justify-between text-xs text-slate-600">
                           <p>Package: <strong>{ad.packageName}</strong></p>
                           <p className="flex items-center gap-1">
                             <Clock className="w-3.5 h-3.5 text-slate-400" />
                             <span>{ad.status === 'active' ? `${daysLeft} Days Remaining` : `Duration: ${ad.durationDays} Days`}</span>
                           </p>
                         </div>
+
+                        {ad.imageUrl && (
+                          <div className="flex items-center gap-2 pt-1">
+                            <button onClick={() => setPreviewImage(ad.imageUrl)} className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-1 cursor-pointer">
+                              <Eye className="w-3.5 h-3.5" /> View Submitted Artwork
+                            </button>
+                          </div>
+                        )}
 
                         {ad.status === 'rejected' && ad.rejectionReason && (
                           <div className="bg-rose-50 border border-rose-200 p-3 rounded-xl text-xs text-rose-700 font-bold flex items-start gap-2">
@@ -277,6 +289,19 @@ export default function UserAdHubModal({ onClose }) {
         )}
 
       </div>
+
+      {/* IMAGE PREVIEW MODAL */}
+      {previewImage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl p-4 max-w-2xl w-full relative space-y-3">
+            <div className="flex justify-between items-center border-b pb-2">
+              <h4 className="text-xs font-black uppercase text-slate-700">Artwork Preview</h4>
+              <button onClick={() => setPreviewImage(null)} className="px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-full font-black text-xs text-slate-800 cursor-pointer">✕ Close</button>
+            </div>
+            <img src={getImageUrl(previewImage)} alt="Artwork Preview" className="max-w-full max-h-[70vh] object-contain mx-auto rounded-xl" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

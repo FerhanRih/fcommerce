@@ -14,6 +14,14 @@ const SuperAdminAdBanners = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAccountModal, setShowAccountModal] = useState(false);
+  const [showPackageModal, setShowPackageModal] = useState(false);
+  
+  // 👉 Fixed: Declared adPackages state so the Edit Packages modal never crashes
+  const [adPackages, setAdPackages] = useState([
+    { id: 1, name: '3-Day Flash Spotlight', days: 3, price: 1500 },
+    { id: 2, name: '7-Day Prime Carousel', days: 7, price: 3000 },
+    { id: 3, name: '30-Day Super Dominance', days: 30, price: 10000 }
+  ]);
   
   // Ad Sub-Tab State ('live' | 'requests')
   const [activeAdTab, setActiveAdTab] = useState('live');
@@ -33,15 +41,12 @@ const SuperAdminAdBanners = () => {
 
   const fetchBanners = async () => {
     try {
-      const token = localStorage.getItem('token');
-      
-const response = await API.get('/admin/ad-banners');
-const data = response.data;
+      const response = await API.get('/admin/ad-banners');
+      const data = response.data;
       if (data.success) {
         const fetchedBanners = data.banners || [];
         const pendingCount = fetchedBanners.filter(b => b.status === 'pending').length;
         
-        // 🛠️ Fixed lowercase 'granted' permission check
         if (pendingCount > prevPendingCountRef.current && prevPendingCountRef.current !== 0) {
           if ('Notification' in window && Notification.permission === 'granted') {
             new Notification('📢 New Ad Campaign Request!', {
@@ -63,12 +68,12 @@ const data = response.data;
 
   const fetchPaymentAccounts = async () => {
     try {
-  const response = await API.get('/admin/payment-accounts');
-  const data = response.data;
-  if (data.success) setPaymentAccounts(data.accounts || []);
-} catch (err) { 
-  console.error(err); 
-}
+      const response = await API.get('/admin/payment-accounts');
+      const data = response.data;
+      if (data.success) setPaymentAccounts(data.accounts || []);
+    } catch (err) { 
+      console.error(err); 
+    }
   };
 
   useEffect(() => {
@@ -83,12 +88,11 @@ const data = response.data;
 
   const handleBannerAction = async (bannerId, action, extraBody = {}) => {
     try {
-      const token = localStorage.getItem('token');
-     const response = await API.put(`/admin/ad-banners/${bannerId}`, {
-  action,
-  ...extraBody
-});
-const data = response.data;
+      const response = await API.put(`/admin/ad-banners/${bannerId}`, {
+        action,
+        ...extraBody
+      });
+      const data = response.data;
       if (data.success) {
         showToast(`Banner campaign ${action}d successfully!`);
         fetchBanners();
@@ -100,7 +104,6 @@ const data = response.data;
 
   const handleCreateAd = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem('token');
     const formData = new FormData();
     formData.append('title', newAd.title);
     formData.append('subtitle', newAd.subtitle);
@@ -114,7 +117,7 @@ const data = response.data;
 
     try {
       const response = await API.post('/admin/ad-banners/create', formData);
-const data = response.data;
+      const data = response.data;
       if (data.success) {
         showToast('House ad published successfully!');
         setShowCreateModal(false);
@@ -126,10 +129,9 @@ const data = response.data;
 
   const handleSaveAccount = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem('token');
     try {
       const response = await API.post('/admin/payment-accounts', accountForm);
-const data = response.data;
+      const data = response.data;
       if (data.success) {
         showToast('Payment account saved!');
         setShowAccountModal(false);
@@ -140,26 +142,32 @@ const data = response.data;
   };
 
   const handleDeleteAccount = async (id) => {
-  if (!confirm('Remove this payment account?')) return;
-  try {
-    await API.delete(`/admin/payment-accounts/${id}`);
-    showToast('Payment account removed.');
-    fetchPaymentAccounts();
-  } catch (err) { alert('Failed to delete.'); }
-};
+    if (!confirm('Remove this payment account?')) return;
+    try {
+      await API.delete(`/admin/payment-accounts/${id}`);
+      showToast('Payment account removed.');
+      fetchPaymentAccounts();
+    } catch (err) { alert('Failed to delete.'); }
+  };
 
-  // Filtered lists based on active tab (Completely hides expired ads)
+  // Helper to resolve image paths safely across API base URL
+  const getImageUrl = (path) => {
+    if (!path) return '';
+    if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:')) return path;
+    const base = API_URL ? API_URL.replace('/api', '') : 'https://fcommerce-backenddd.onrender.com';
+    return `${base}${path.startsWith('/') ? '' : '/'}${path}`;
+  };
+
+  // Filtered lists based on active tab
   const filteredBanners = banners.filter(ad => {
     const now = new Date();
     const isExpired = (ad.status === 'expired') || (ad.expiresAt && new Date(ad.expiresAt) < now);
 
-    // 🛑 Never show expired ads anywhere under any condition
     if (isExpired) return false;
 
     if (activeAdTab === 'live') {
       return ad.status === 'active';
     } else {
-      // Requests tab: Strictly pending submissions waiting for review
       return ad.status === 'pending';
     }
   });
@@ -399,26 +407,27 @@ const data = response.data;
       )}
 
       {selectedImage && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
-    <div className="bg-white rounded-3xl p-4 max-w-2xl w-full relative space-y-3">
-      <div className="flex justify-between items-center border-b pb-2">
-        <h4 className="text-xs font-black uppercase text-slate-700">Banner Artwork Preview</h4>
-        <button onClick={() => setSelectedImage(null)} className="px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-full font-black text-xs text-slate-800 cursor-pointer">✕ Close</button>
-      </div>
-      <img src={selectedImage.startsWith('http') ? selectedImage : `${API_URL}${selectedImage}`} alt="Banner" className="max-w-full max-h-[70vh] object-contain mx-auto rounded-xl" />
-    </div>
-  </div>
-)}
-{selectedReceipt && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
-    <div className="bg-white rounded-3xl p-4 max-w-2xl w-full relative space-y-3">
-      <div className="flex justify-between items-center border-b pb-2">
-        <h4 className="text-xs font-black uppercase text-slate-700">Payment Receipt Preview</h4>
-        <button onClick={() => setSelectedReceipt(null)} className="px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-full font-black text-xs text-slate-800 cursor-pointer">✕ Close</button>
-      </div>
-      <img src={selectedReceipt.startsWith('http') ? selectedReceipt : `${API_URL}${selectedReceipt}`} alt="Receipt" className="max-w-full max-h-[70vh] object-contain mx-auto rounded-xl" />
-    </div>
-  </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl p-4 max-w-2xl w-full relative space-y-3">
+            <div className="flex justify-between items-center border-b pb-2">
+              <h4 className="text-xs font-black uppercase text-slate-700">Banner Artwork Preview</h4>
+              <button onClick={() => setSelectedImage(null)} className="px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-full font-black text-xs text-slate-800 cursor-pointer">✕ Close</button>
+            </div>
+            <img src={getImageUrl(selectedImage)} alt="Banner" className="max-w-full max-h-[70vh] object-contain mx-auto rounded-xl" />
+          </div>
+        </div>
+      )}
+
+      {selectedReceipt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl p-4 max-w-2xl w-full relative space-y-3">
+            <div className="flex justify-between items-center border-b pb-2">
+              <h4 className="text-xs font-black uppercase text-slate-700">Payment Receipt Preview</h4>
+              <button onClick={() => setSelectedReceipt(null)} className="px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-full font-black text-xs text-slate-800 cursor-pointer">✕ Close</button>
+            </div>
+            <img src={getImageUrl(selectedReceipt)} alt="Receipt" className="max-w-full max-h-[70vh] object-contain mx-auto rounded-xl" />
+          </div>
+        </div>
       )}
     </div>
   );
