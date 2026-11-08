@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { getDeliveryFees, updateDeliveryFees } = require('../controllers/deliverySettingsController');
 const { protect, authorize } = require('../middleware/authMiddleware');
-const { SystemSetting } = require('../models');
+const SystemSetting = require('../models/SystemSetting'); 
 
 // Existing Delivery Fees Routes
 router.get('/delivery-fees', getDeliveryFees);
