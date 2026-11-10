@@ -83,35 +83,35 @@ export default function Sidebar({
             )}
           </div>
 
-{/* 3. Shopping Cart (Protected - Requires Sign In) */}
-<button 
-  onClick={() => handleProtectedAction(() => {
-    onClose();
-    if (onNavigate) onNavigate('cart-checkout'); // 👈 Directs to your cart-checkout view page safely
-  })} 
-  className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold text-xs uppercase tracking-wider transition cursor-pointer"
->
-  <div className="flex items-center space-x-2">
-    <span>Cart</span>
-    {cartItemCount > 0 && (
-      <span className="px-1.5 py-0.5 bg-[#1E4D58] text-white rounded-full text-[10px] font-black">
-        {cartItemCount}
-      </span>
-    )}
-  </div>
-  {!currentUser?.phone && <span className="text-[9px] font-black bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded uppercase">Sign In</span>}
-</button>
+          {/* 3. Shopping Cart (Protected) */}
+          <button 
+            onClick={() => handleProtectedAction(() => {
+              onClose();
+              if (onNavigate) onNavigate('cart-checkout');
+            })} 
+            className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold text-xs uppercase tracking-wider transition cursor-pointer"
+          >
+            <div className="flex items-center space-x-2">
+              <span>Cart</span>
+              {cartItemCount > 0 && (
+                <span className="px-1.5 py-0.5 bg-[#1E4D58] text-white rounded-full text-[10px] font-black">
+                  {cartItemCount}
+                </span>
+              )}
+            </div>
+            {!currentUser?.phone && <span className="text-[9px] font-black bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded uppercase">Sign In</span>}
+          </button>
 
-{/* 4. Wishlist (Protected) - Navigates to Wishlist Page */}
-<button 
-  onClick={() => handleProtectedAction(() => {
-    if (onNavigate) onNavigate('wishlist');
-  })} 
-  className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold text-xs uppercase tracking-wider transition cursor-pointer"
->
-  <span>Wishlist</span>
-  {!currentUser?.phone && <span className="text-[9px] font-black bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded uppercase">Sign In</span>}
-</button>
+          {/* 4. Wishlist (Protected) */}
+          <button 
+            onClick={() => handleProtectedAction(() => {
+              if (onNavigate) onNavigate('wishlist');
+            })} 
+            className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold text-xs uppercase tracking-wider transition cursor-pointer"
+          >
+            <span>Wishlist</span>
+            {!currentUser?.phone && <span className="text-[9px] font-black bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded uppercase">Sign In</span>}
+          </button>
 
           {/* 5. Order History (Protected) */}
           <button onClick={() => handleProtectedAction(() => onNavigate && onNavigate('orders'))} className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold text-xs uppercase tracking-wider transition cursor-pointer">
@@ -142,6 +142,15 @@ export default function Sidebar({
           {/* 9. Settings */}
           <button onClick={() => handleProtectedAction(() => onNavigate && onNavigate('settings'))} className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold text-xs uppercase tracking-wider transition cursor-pointer">
             <span>Settings</span>
+          </button>
+
+          {/* 10. Terms & Privacy (Public - Positioned below Settings) */}
+          <button 
+            onClick={() => { onClose(); if (onNavigate) onNavigate('terms-privacy'); }} 
+            className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold text-xs uppercase tracking-wider transition cursor-pointer"
+          >
+            <span>Terms & Privacy</span>
+            <span className="text-[9px] font-black bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded uppercase">Legal</span>
           </button>
         </div>
 
