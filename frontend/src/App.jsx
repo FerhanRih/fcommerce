@@ -17,7 +17,7 @@ import TrackOrderPage from './components/TrackOrderPage';
 import OrderHistoryPage from './components/OrderHistoryPage';
 import UserSettingsPage from './components/UserSettingsPage';
 import SuperAdminDashboard from './components/SuperAdminDashboard';
-
+import TermsAndPrivacyPage from './components/TermsAndPrivacyPage';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -589,6 +589,12 @@ const handleNavigation = (pageId, param = null) => {
   />
 )}
 
+   {/* Terms & Privacy Page View */}
+{activeView.page === 'terms-privacy' && (
+  <TermsAndPrivacyPage 
+    onBackToMarketplace={() => setActiveView({ page: 'catalog', product: null })} 
+  />
+)}
         {/* Global Modals */}
         <RegisterModal
           isOpen={isRegisterOpen}
