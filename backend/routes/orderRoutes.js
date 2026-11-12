@@ -316,7 +316,7 @@ router.put('/:id/merchant-response', protect, async (req, res) => {
     return res.status(500).json({ success: false, message: `Server Error: ${error.message}` });
   }
 });
-// 1. Bank Transfer Receipt Upload
+// 1. Bank Transfer Receipt Upload (Updated for Cloudinary)
 router.put('/:id/upload-receipt', protect, upload.single('receipt'), async (req, res) => {
   try {
     const order = await Order.findByPk(req.params.id);
@@ -328,14 +328,14 @@ router.put('/:id/upload-receipt', protect, upload.single('receipt'), async (req,
       return res.status(400).json({ success: false, message: 'Please attach a payment receipt image.' });
     }
 
-    const receiptUrl = req.file ? `/uploads/${req.file.filename}` : req.body.receiptUrl;
+    // ☁️ Use req.file.path so Cloudinary's permanent HTTPS URL is saved correctly
+    const receiptUrl = req.file ? req.file.path : req.body.receiptUrl;
 
     await order.update({
       paymentReceiptUrl: receiptUrl,
       status: 'payment_uploaded',
     });
 
-    // Explicitly return 200 OK with success: true
     return res.status(200).json({
       success: true,
       message: 'Receipt uploaded successfully. Order is pending merchant verification.',
@@ -346,7 +346,6 @@ router.put('/:id/upload-receipt', protect, upload.single('receipt'), async (req,
     return res.status(500).json({ success: false, message: error.message || 'Failed to upload receipt screenshot' });
   }
 });
-
 // 2. Verify Payment & Approve Dispatch
 router.put('/:id/verify-payment', protect, async (req, res) => {
   try {

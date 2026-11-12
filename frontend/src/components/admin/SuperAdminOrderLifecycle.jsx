@@ -250,7 +250,7 @@ const SuperAdminOrderLifecycle = () => {
                     </div>
                   </div>
 
-                  {/* STAGE-SPECIFIC SMS ACTION BUTTONS */}
+                  {/* STAGE-SPECIFIC SMS ACTION BUTTONS WITH DEEP LINKS */}
                   <div className="pt-3 border-t border-slate-200/60 flex flex-wrap items-center justify-between gap-3">
                     <button
                       onClick={() => setSelectedOrder(order)}
@@ -260,12 +260,12 @@ const SuperAdminOrderLifecycle = () => {
                       <span>View Order Items</span>
                     </button>
 
-                    {/* SUB-TAB 1: REQUEST SMS (Merchant gets only products amount) */}
+                    {/* SUB-TAB 1: REQUEST SMS -> Direct Merchant to Store Orders Tab */}
                     {activeSubTab === 'requests' && (
                       <button
                         onClick={() => handleSendSMS(
                           merchantPhone,
-                          `[FCOMMERCE] New order #${order.id} received for ${storeName}. Products Subtotal: ${orderSubtotal.toLocaleString()} ETB. Please review and accept: https://fcommerce.et/orders/${order.id}`
+                          `[FCOMMERCE] New order #${order.id} received for ${storeName}. Subtotal: ${orderSubtotal.toLocaleString()} ETB. Review & accept: https://fcommerce.et/?go=store-orders`
                         )}
                         className="w-full sm:w-auto px-4 py-2 bg-[#1E4D58] hover:bg-[#163C45] text-white font-black text-xs rounded-xl flex items-center justify-center space-x-2 transition cursor-pointer shadow-xs"
                       >
@@ -274,12 +274,12 @@ const SuperAdminOrderLifecycle = () => {
                       </button>
                     )}
 
-                    {/* SUB-TAB 2: DECISION SMS (User gets products amount + cash delivery reminder) */}
+                    {/* SUB-TAB 2: DECISION SMS -> Direct Buyer to Order Tracker */}
                     {activeSubTab === 'decision' && (
                       <button
                         onClick={() => handleSendSMS(
                           customerPhone,
-                          `[FCOMMERCE] Great news ${customerName}! Your order #${order.id} from ${storeName} is accepted. Products Amount: ${orderSubtotal.toLocaleString()} ETB (Delivery fee of ${deliveryFee.toLocaleString()} ETB is paid in cash upon delivery). Please complete payment: https://fcommerce.et`
+                          `[FCOMMERCE] Your order #${order.id} from ${storeName} is accepted! Products: ${orderSubtotal.toLocaleString()} ETB. Complete payment & upload receipt: https://fcommerce.et/?go=track`
                         )}
                         className="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl flex items-center justify-center space-x-2 transition cursor-pointer shadow-xs"
                       >
@@ -288,12 +288,12 @@ const SuperAdminOrderLifecycle = () => {
                       </button>
                     )}
 
-                    {/* SUB-TAB 3: PAID SMS (Merchant gets products amount verification notice) */}
+                    {/* SUB-TAB 3: PAID SMS -> Direct Merchant to Store Orders Tab to Verify Receipt */}
                     {activeSubTab === 'paid' && (
                       <button
                         onClick={() => handleSendSMS(
                           merchantPhone,
-                          `[FCOMMERCE] Payment uploaded for order #${order.id} (Products Amount: ${orderSubtotal.toLocaleString()} ETB). Merchant, please verify receipt: https://fcommerce.et`
+                          `[FCOMMERCE] Payment receipt uploaded for order #${order.id} (${orderSubtotal.toLocaleString()} ETB). Please verify receipt: https://fcommerce.et/?go=store-orders`
                         )}
                         className="w-full sm:w-auto px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-black text-xs rounded-xl flex items-center justify-center space-x-2 transition cursor-pointer shadow-xs"
                       >
@@ -302,12 +302,12 @@ const SuperAdminOrderLifecycle = () => {
                       </button>
                     )}
 
-                    {/* SUB-TAB 4: VERIFIED SMS (Buyer dispatch notice + cash delivery reminder) */}
+                    {/* SUB-TAB 4: VERIFIED SMS -> Direct Buyer to Order Tracker */}
                     {activeSubTab === 'verified' && (
                       <button
                         onClick={() => handleSendSMS(
                           customerPhone,
-                          `[FCOMMERCE] Payment for order #${order.id} is verified! Your items are in transit. Delivery fee (${deliveryFee.toLocaleString()} ETB) is payable in cash upon arrival.`
+                          `[FCOMMERCE] Payment for order #${order.id} is verified! Your items are in transit. Track dispatch status: https://fcommerce.et/?go=track`
                         )}
                         className="w-full sm:w-auto px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white font-black text-xs rounded-xl flex items-center justify-center space-x-2 transition cursor-pointer shadow-xs"
                       >

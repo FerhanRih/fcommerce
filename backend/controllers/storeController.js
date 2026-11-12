@@ -227,7 +227,8 @@ const updateProfileImage = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No image file provided.' });
     }
 
-    const imageUrl = `/uploads/${req.file.filename}`;
+    // ☁️ Use req.file.path to capture the secure Cloudinary HTTPS URL automatically
+    const imageUrl = req.file.path;
 
     await store.update({ logoUrl: imageUrl, logo_url: imageUrl });
 

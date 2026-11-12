@@ -354,6 +354,17 @@ const handleNavigation = (pageId, param = null) => {
   }
 };
 
+// 1. Inside App.jsx useEffect
+useEffect(() => {
+  const go = new URLSearchParams(window.location.search).get('go');
+  
+  if (go === 'store-orders') {
+    setActiveView({ page: 'my-store', tab: 'orders' });
+  } else if (go === 'track') {
+    setActiveView({ page: 'track-order' });
+  }
+}, []);
+
   return (
     <>
       {/* Loading Splash Screen */}
@@ -387,12 +398,13 @@ const handleNavigation = (pageId, param = null) => {
         {/* DYNAMIC VIEW ROUTER */}
         {activeView.page === 'my-store' ? (
           <MyStoreDashboard
-            currentStore={currentStore}
-            currentUser={currentUser}
-            onOpenCreateStore={() => setIsCreateStoreOpen(true)}
-            onBackToMain={() => setActiveView({ page: 'catalog', product: null })}
-            onLogout={handleLogout}
-          />
+    currentStore={currentStore}
+    currentUser={currentUser}
+    initialTab={activeView.tab}
+    onOpenCreateStore={() => setIsCreateStoreOpen(true)}
+    onBackToMain={() => setActiveView({ page: 'catalog', product: null })}
+    onLogout={handleLogout}
+  />
         ) : (
           <>
             <Navbar

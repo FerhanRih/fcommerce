@@ -1,20 +1,7 @@
 // backend/routes/adminRoutes.js
 const express = require('express');
 const router = express.Router();
-const path = require('path');
-const fs = require('fs');
-const multer = require('multer');
-
-// Configure multer for admin ad image uploads
-const uploadDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-const upload = multer({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => cb(null, uploadDir),
-    filename: (req, file, cb) => cb(null, Date.now() + '-' + Math.round(Math.random() * 1e9) + path.extname(file.originalname))
-  })
-});
-
+const upload = require('../middleware/uploadMiddleware'); // 👈 Using your centralized Cloudinary middleware
 const { protect } = require('../middleware/authMiddleware');
 
 const adminController = require('../controllers/adminController');
@@ -50,10 +37,11 @@ router.get('/dashboard-stats', protect, requireAdmin, checkHandler(adminControll
 // 2. Master All Orders Audit (Page 8)
 router.get('/all-orders', protect, requireAdmin, checkHandler(adminController.getAllOrders, 'adminController.getAllOrders'));
 
-// 3. Order Lifecycle Hub (Page 2) — Pointing to adminController
+// 3. Order Lifecycle Hub (Page 2)
 router.get('/lifecycle-orders', protect, requireAdmin, checkHandler(adminController.getLifecycleOrders, 'adminController.getLifecycleOrders'));
 router.put('/orders/:orderId/status', protect, requireAdmin, checkHandler(adminOrderController.updateOrderStatus, 'adminOrderController.updateOrderStatus'));
 router.put('/orders/:orderId/sms-sent', protect, requireAdmin, checkHandler(adminOrderController.markSmsSent, 'adminOrderController.markSmsSent'));
+
 // 4. Delivery Hub (Page 3)
 router.get('/delivery-orders', protect, requireAdmin, checkHandler(adminDeliveryController.getDeliveryOrders, 'adminDeliveryController.getDeliveryOrders'));
 router.put('/delivery-orders/:orderId/status', protect, requireAdmin, checkHandler(adminDeliveryController.updateDeliveryStatus, 'adminDeliveryController.updateDeliveryStatus'));
@@ -67,7 +55,7 @@ router.get('/ad-banners', protect, requireAdmin, checkHandler(adminAdController.
 router.put('/ad-banners/:bannerId', protect, requireAdmin, checkHandler(adminAdController.updateAdStatus, 'adminAdController.updateAdStatus'));
 router.post('/ad-banners/create', protect, requireAdmin, upload.single('image'), checkHandler(adminAdController.createAdminAd, 'adminAdController.createAdminAd'));
 
-// Payment Accounts Routes (Accessed by both admin and user checkout)
+// Payment Accounts Routes
 router.get('/payment-accounts', checkHandler(adminAdController.getPaymentAccounts, 'adminAdController.getPaymentAccounts'));
 router.post('/payment-accounts', protect, requireAdmin, checkHandler(adminAdController.savePaymentAccount, 'adminAdController.savePaymentAccount'));
 router.delete('/payment-accounts/:id', protect, requireAdmin, checkHandler(adminAdController.deletePaymentAccount, 'adminAdController.deletePaymentAccount'));

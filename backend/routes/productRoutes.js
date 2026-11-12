@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const Product = require('../models/Product');
-const Store = require('../models/Store'); // 👈 Make sure Store model is imported
+const Store = require('../models/Store');
 const upload = require('../middleware/uploadMiddleware'); 
 const { protect } = require('../middleware/authMiddleware');
 
@@ -58,15 +58,15 @@ router.post('/', protect, upload ? upload.single('image') : (req, res, next) => 
       });
     }
 
-    // Handle uploaded file path if multer is active
-    const imageUrl = req.file ? `/uploads/${req.file.filename}` : req.body.imageUrl;
+    // ☁️ Use Cloudinary file path if uploaded, otherwise fallback to request body
+    const imageUrl = req.file ? req.file.path : req.body.imageUrl;
 
     const newProduct = await Product.create({
       title,
       category: category || 'Perfume',
       price: Number(price),
       stock: stock !== undefined ? Number(stock) : 0,
-      storeId: store.id, // Enforce the actual approved store ID
+      storeId: store.id,
       storeName: store.store_name || store.name || storeName || 'Boutique Store',
       imageUrl,
       description,
@@ -88,7 +88,7 @@ router.post('/', protect, upload ? upload.single('image') : (req, res, next) => 
   }
 });
 
-// Update product (supports image upload and MOQ updates)
+// Update product (supports Cloudinary image upload and MOQ updates)
 router.put('/:id', protect, upload.single('image'), async (req, res) => {
   try {
     const { id } = req.params;
@@ -99,7 +99,8 @@ router.put('/:id', protect, upload.single('image'), async (req, res) => {
       return res.status(404).json({ success: false, message: 'Product not found.' });
     }
 
-    const imageUrl = req.file ? `/uploads/${req.file.filename}` : product.imageUrl;
+    // ☁️ Use Cloudinary path if a new file is uploaded, otherwise keep existing image URL
+    const imageUrl = req.file ? req.file.path : product.imageUrl;
 
     await product.update({
       title: title || product.title,

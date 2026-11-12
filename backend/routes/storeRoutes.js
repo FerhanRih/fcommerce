@@ -15,7 +15,7 @@ router.get('/my-store', protect, storeController.getMyStore);
 
 router.put('/profile', updateStoreProfile);
 
-// PUT /api/stores/:id/profile-image - Update store profile logo/image directly
+// PUT /api/stores/:id/profile-image - Update store profile logo/image directly via Cloudinary
 router.put('/:id/profile-image', protect, upload.single('image'), async (req, res) => {
   try {
     const { id } = req.params;
@@ -29,9 +29,9 @@ router.put('/:id/profile-image', protect, upload.single('image'), async (req, re
       return res.status(400).json({ success: false, message: 'No image file provided.' });
     }
 
-    const imageUrl = `/uploads/${req.file.filename}`;
+    // ☁️ req.file.path holds the permanent Cloudinary HTTPS URL automatically!
+    const imageUrl = req.file.path;
 
-    // 🛠️ Fix: Explicitly update both model property and force database update
     store.logoUrl = imageUrl;
     await store.save();
 
@@ -57,7 +57,6 @@ router.put('/:id', protect, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Store not found.' });
     }
 
-    // Explicitly parse and update bankAccounts
     let updatedAccounts = bankAccounts;
     if (typeof updatedAccounts === 'string') {
       try { updatedAccounts = JSON.parse(updatedAccounts); } catch (e) { updatedAccounts = []; }
@@ -70,7 +69,6 @@ router.put('/:id', protect, async (req, res) => {
       ...(address && { address }),
     });
 
-    // Re-fetch store instance to ensure fresh payload
     const freshStore = await Store.findByPk(id);
 
     return res.status(200).json({
@@ -83,4 +81,5 @@ router.put('/:id', protect, async (req, res) => {
     return res.status(500).json({ success: false, message: 'Server error updating store.' });
   }
 });
+
 module.exports = router;

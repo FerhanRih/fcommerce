@@ -1,4 +1,3 @@
-// backend/server.js
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -7,9 +6,9 @@ const jwt = require('jsonwebtoken');
 const Order = require('./models/Order');
 const User = require('./models/User');
 const bcrypt = require('bcryptjs');
+
 // 1. Initialize Express app FIRST
 const app = express();
-
 
 app.use(cors({
   origin: '*', 
@@ -20,25 +19,17 @@ app.use(cors({
 
 app.use(express.json());
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-// Check every 1 minute for expired pending orders
-setInterval(async () => {
-  try {
-    await Order.update(
-      { status: 'expired' },
-      {
-        where: {
-          status: 'pending_merchant',
-          expiresAt: { [Op.lt]: new Date() },
-        },
-      }
-    );
-  } catch (err) {
-    console.error('Error auto-expiring orders:', err);
-  }
-}, 60 * 1000);
+// Lightweight Health Check Route for UptimeRobot (Keeps Render awake instantly)
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'active', timestamp: new Date() });
+});
 
-// Import centralized models & DB connection (runs associations in models/index.js)
+// Root Health Check
+app.get('/', (req, res) => {
+  res.send('FCOMMERCE API is running on TiDB Cloud & Cloudinary...');
+});
+
+// Import centralized models & DB connection
 const { sequelize } = require('./models');
 
 // Route Imports
@@ -50,14 +41,15 @@ const orderRoutes = require('./routes/orderRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 
+// API Routes
 app.use('/api/orders', orderRoutes);
 app.use('/api/settings', settingsRoutes);
-// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/stores', storeRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/banners', bannerRoutes);
 app.use('/api/admin', adminRoutes);
+
 app.put('/api/users/profile', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
@@ -66,7 +58,6 @@ app.put('/api/users/profile', async (req, res) => {
     }
 
     const token = authHeader.split(' ')[1];
-    // 👇 Matches your login secret key exactly!
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fcommerce_secure_secret_key_2026');
     const userId = decoded.id;
 
@@ -77,7 +68,6 @@ app.put('/api/users/profile', async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found in database.' });
     }
 
-    // Handle Password Change if provided
     if (newPassword) {
       if (!currentPassword) {
         return res.status(400).json({ success: false, message: 'Current password is required.' });
@@ -109,7 +99,6 @@ app.put('/api/users/profile', async (req, res) => {
   }
 });
 
-
 // --- REVIEWS API ROUTES ---
 app.get('/api/reviews/product/:productId', (req, res) => {
   try {
@@ -136,11 +125,6 @@ app.post('/api/reviews', (req, res) => {
   }
 });
 
-// Health Check
-app.get('/', (req, res) => {
-  res.send('FCOMMERCE API is running for fcommerce_db2...');
-});
-
 const PORT = process.env.PORT || 5000;
 
 // Temporary Superadmin Promotion Script
@@ -159,13 +143,12 @@ const makeSuperAdmin = async () => {
   }
 };
 
-const syncOptions = {};
 sequelize
-  .sync(syncOptions)
+  .sync({})
   .then(async () => {
     console.log('✅ Database connected & models synced.');
 
-    // Run order expiration check only AFTER successful DB connection
+    // Run order expiration check every 1 minute
     setInterval(async () => {
       try {
         await Order.update(
@@ -182,7 +165,6 @@ sequelize
       }
     }, 60 * 1000);
 
-    // Run it once on startup
     await makeSuperAdmin();
 
     app.listen(PORT, () => {

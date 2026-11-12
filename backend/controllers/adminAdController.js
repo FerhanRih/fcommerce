@@ -83,7 +83,9 @@ const adminAdController = {
   createAdminAd: async (req, res) => {
     try {
       const { title, subtitle, cta, tag, linkUrl, packageName, price, durationDays } = req.body;
-      const imageUrl = req.file ? `/uploads/${req.file.filename}` : req.body.imageUrl;
+      
+      // ☁️ Use req.file.path to capture the secure Cloudinary HTTPS URL automatically
+      const imageUrl = req.file ? req.file.path : req.body.imageUrl;
 
       if (!imageUrl) {
         return res.status(400).json({ success: false, message: 'Banner image is required.' });

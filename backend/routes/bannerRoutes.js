@@ -1,31 +1,9 @@
-// backend/routes/bannerRoutes.js
 const express = require('express');
 const router = express.Router();
-const path = require('path');
-const fs = require('fs');
-const multer = require('multer');
 const { Op } = require('sequelize');
 const Banner = require('../models/Banner');
 const { protect } = require('../middleware/authMiddleware');
-
-// Ensure uploads folder exists
-const uploadDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Multer Storage Configuration
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  },
-});
-
-const upload = multer({ storage });
+const upload = require('../middleware/uploadMiddleware'); // 👈 Use centralized Cloudinary upload middleware
 
 // GET /api/banners — Fetch live active banners for homepage display
 router.get('/', async (req, res) => {
@@ -35,7 +13,7 @@ router.get('/', async (req, res) => {
       where: {
         isActive: true,
         status: 'active',
-        expiresAt: { [Op.gt]: now } // 👈 Strictly ensures only banners with a future expiration date are shown
+        expiresAt: { [Op.gt]: now }
       },
       order: [['createdAt', 'DESC']]
     });
@@ -70,12 +48,13 @@ router.post(
     try {
       const { title, subtitle, linkUrl, packageName, price, durationDays } = req.body;
 
+      // ☁️ Cloudinary stores the full secure URL in .path
       const imageUrl = req.files && req.files['image']
-        ? `/uploads/${req.files['image'][0].filename}`
+        ? req.files['image'][0].path
         : null;
 
       const paymentReceiptUrl = req.files && req.files['receipt']
-        ? `/uploads/${req.files['receipt'][0].filename}`
+        ? req.files['receipt'][0].path
         : null;
 
       if (!imageUrl || !paymentReceiptUrl) {

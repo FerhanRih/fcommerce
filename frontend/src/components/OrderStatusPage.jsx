@@ -10,6 +10,8 @@ export default function OrderStatusPage({ orderId, onBackToMarketplace, onTryAno
   const [receiptFile, setReceiptFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [feedback, setFeedback] = useState({ type: '', text: '' });
+
 
   const fetchOrderStatus = async () => {
   const token = localStorage.getItem('token');
