@@ -407,23 +407,29 @@ const SuperAdminAdBanners = () => {
               <button onClick={() => setShowPackageModal(false)} className="text-slate-400 hover:text-slate-700 font-bold">✕</button>
             </div>
             
-            <div className="space-y-3">
-              {adPackages.map((pkg) => (
-                <div key={pkg.id} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <div>
-                    <h4 className="font-black text-slate-900 text-xs">{pkg.name}</h4>
-                    <p className="text-[11px] text-slate-500 font-semibold">{pkg.days} Days • {pkg.price.toLocaleString()} ETB</p>
-                  </div>
-                  <button
-                    onClick={() => handleUpdatePackage(pkg)}
-                    className="px-3 py-1.5 bg-[#1E4D58] text-white font-black text-[11px] rounded-xl cursor-pointer"
-                  >
-                    Edit Package
-                  </button>
-                </div>
-              ))}
-            </div>
-
+           <div className="space-y-3">
+  {adPackages.length === 0 ? (
+    <div className="py-8 text-center bg-slate-50 border border-dashed border-slate-200 rounded-2xl space-y-2">
+      <p className="text-xs font-bold text-slate-500">No ad packages found in database.</p>
+      <p className="text-[11px] text-slate-400">Make sure your backend `/admin/ad-packages` endpoint is seeded and returning records.</p>
+    </div>
+  ) : (
+    adPackages.map((pkg) => (
+      <div key={pkg.id} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div>
+          <h4 className="font-black text-slate-900 text-xs">{pkg.name}</h4>
+          <p className="text-[11px] text-slate-500 font-semibold">{pkg.days} Days • {Number(pkg.price || 0).toLocaleString()} ETB</p>
+        </div>
+        <button
+          onClick={() => handleUpdatePackage(pkg)}
+          className="px-3 py-1.5 bg-[#1E4D58] text-white font-black text-[11px] rounded-xl cursor-pointer"
+        >
+          Edit Package
+        </button>
+      </div>
+    ))
+  )}
+</div>
             <button onClick={() => setShowPackageModal(false)} className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs rounded-xl cursor-pointer">
               Close & Save
             </button>
