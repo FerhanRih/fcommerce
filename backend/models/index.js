@@ -5,9 +5,11 @@ const Store = require('./Store');
 const Product = require('./Product');
 const Banner = require('./Banner');
 const Order = require('./Order');
-const PaymentAccount = require('./PaymentAccount'); // 👈 Add PaymentAccount import
+const PaymentAccount = require('./PaymentAccount');
 const ActivityLog = require('./ActivityLog');
 const BroadcastMessage = require('./BroadcastMessage');
+const AdPackage = require('./AdPackage'); // 👈 1. Import AdPackage here
+
 // User <-> Store Associations
 User.hasOne(Store, { 
   foreignKey: { name: 'userId', field: 'user_id' }, 
@@ -58,4 +60,5 @@ module.exports = {
   PaymentAccount, 
   ActivityLog,
   BroadcastMessage,
+  AdPackage, // 👈 2. Export AdPackage here
 };
