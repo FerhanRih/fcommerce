@@ -3,17 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { Megaphone, Upload, CheckCircle2, XCircle, Clock, ShieldCheck, Plus, ArrowLeft, Eye } from 'lucide-react';
 import API, { API_URL } from '../services/api';
 
-// Static Ad Packages Configuration constant
-const PACKAGES = [
-  { id: 1, name: '3-Day Flash Spotlight', days: 3, price: 1500 },
-  { id: 2, name: '7-Day Prime Carousel', days: 7, price: 3000 },
-  { id: 3, name: '30-Day Super Dominance', days: 30, price: 10000 }
-];
-
 export default function UserAdHubModal({ onClose }) {
   const [view, setView] = useState('list'); // 'list' | 'create'
   const [myBanners, setMyBanners] = useState([]);
   const [paymentAccounts, setPaymentAccounts] = useState([]);
+  const [packages, setPackages] = useState([]); // 👉 Dynamic packages fetched from database
+  const [selectedPkg, setSelectedPkg] = useState(null);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState('');
 
@@ -21,7 +16,6 @@ export default function UserAdHubModal({ onClose }) {
   const [previewImage, setPreviewImage] = useState(null);
 
   // Form State
-  const [selectedPkg, setSelectedPkg] = useState(PACKAGES[0]);
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
@@ -38,21 +32,27 @@ export default function UserAdHubModal({ onClose }) {
   const getImageUrl = (path) => {
     if (!path) return '';
     if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:')) return path;
-    return `${API_URL}${path.startsWith('/') ? '' : '/'}${path}`;
+    const base = API_URL ? API_URL.replace('/api', '') : 'https://fcommerce-backenddd.onrender.com';
+    return `${base}${path.startsWith('/') ? '' : '/'}${path}`;
   };
 
   const fetchMyData = async () => {
     try {
       setLoading(true);
-      const [bannersRes, accountsRes] = await Promise.all([
+      const [bannersRes, accountsRes, pkgsRes] = await Promise.all([
         API.get('/banners/my-campaigns'),
-        API.get('/admin/payment-accounts')
+        API.get('/admin/payment-accounts'),
+        API.get('/banners/packages') // 👉 Fetch dynamic live packages
       ]);
       
       if (Array.isArray(bannersRes.data)) setMyBanners(bannersRes.data);
       if (accountsRes.data.success) setPaymentAccounts(accountsRes.data.accounts || []);
+      if (pkgsRes.data.success && pkgsRes.data.packages.length > 0) {
+        setPackages(pkgsRes.data.packages);
+        setSelectedPkg(pkgsRes.data.packages[0]); // Default to first active package
+      }
     } catch (err) {
-      console.error('Error fetching user campaigns:', err);
+      console.error('Error fetching user campaigns & packages:', err);
     } finally {
       setLoading(false);
     }
@@ -66,6 +66,11 @@ export default function UserAdHubModal({ onClose }) {
     e.preventDefault();
     if (!imageFile || !receiptFile) {
       showToast('Please upload both your banner artwork and your payment receipt screenshot.');
+      return;
+    }
+
+    if (!selectedPkg) {
+      showToast('Please select an active advertising package.');
       return;
     }
 
@@ -221,16 +226,16 @@ export default function UserAdHubModal({ onClose }) {
         {/* VIEW 2: CREATE & PAY FORM */}
         {view === 'create' && (
           <form onSubmit={handleSubmitAd} className="space-y-5">
-            {/* 1. PACKAGE SELECTION */}
+            {/* 1. DYNAMIC PACKAGE SELECTION */}
             <div className="space-y-2">
               <label className="text-xs font-black text-slate-900 uppercase tracking-wider">1. Select Advertising Package</label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {PACKAGES.map(pkg => (
+                {packages.map(pkg => (
                   <div
                     key={pkg.id}
                     onClick={() => setSelectedPkg(pkg)}
                     className={`border rounded-2xl p-3.5 cursor-pointer transition ${
-                      selectedPkg.id === pkg.id ? 'border-[#1E4D58] bg-[#1E4D58]/5 ring-2 ring-[#1E4D58]/20' : 'border-slate-200 bg-slate-50'
+                      selectedPkg?.id === pkg.id ? 'border-[#1E4D58] bg-[#1E4D58]/5 ring-2 ring-[#1E4D58]/20' : 'border-slate-200 bg-slate-50'
                     }`}
                   >
                     <h4 className="font-black text-slate-900 text-xs">{pkg.name}</h4>
@@ -247,7 +252,7 @@ export default function UserAdHubModal({ onClose }) {
                 <ShieldCheck className="w-4 h-4 text-amber-700" />
                 2. Deposit Payment to Verified Accounts
               </h4>
-              <p className="text-[11px] text-amber-800 font-medium">Please transfer <strong>{selectedPkg.price} ETB</strong> to one of the accounts below before uploading your payment receipt screenshot:</p>
+              <p className="text-[11px] text-amber-800 font-medium">Please transfer <strong>{selectedPkg?.price || 0} ETB</strong> to one of the accounts below before uploading your payment receipt screenshot:</p>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                 {paymentAccounts.map(acc => (
