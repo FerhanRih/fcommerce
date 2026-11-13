@@ -16,12 +16,8 @@ const SuperAdminAdBanners = () => {
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [showPackageModal, setShowPackageModal] = useState(false);
   
-  // 👉 Fixed: Declared adPackages state so the Edit Packages modal never crashes
-  const [adPackages, setAdPackages] = useState([
-    { id: 1, name: '3-Day Flash Spotlight', days: 3, price: 1500 },
-    { id: 2, name: '7-Day Prime Carousel', days: 7, price: 3000 },
-    { id: 3, name: '30-Day Super Dominance', days: 30, price: 10000 }
-  ]);
+  // 👉 Dynamic adPackages state fetched directly from the database API
+  const [adPackages, setAdPackages] = useState([]);
   
   // Ad Sub-Tab State ('live' | 'requests')
   const [activeAdTab, setActiveAdTab] = useState('live');
@@ -76,9 +72,22 @@ const SuperAdminAdBanners = () => {
     }
   };
 
+  // 👉 Fetch dynamic ad packages from the database endpoint
+  const fetchAdPackages = async () => {
+    try {
+      const response = await API.get('/admin/ad-packages');
+      if (response.data.success) {
+        setAdPackages(response.data.packages || []);
+      }
+    } catch (err) {
+      console.error('Error fetching ad packages:', err);
+    }
+  };
+
   useEffect(() => {
     fetchBanners();
     fetchPaymentAccounts();
+    fetchAdPackages();
     if ('Notification' in window && Notification.permission !== 'granted') {
       Notification.requestPermission();
     }
@@ -148,6 +157,29 @@ const SuperAdminAdBanners = () => {
       showToast('Payment account removed.');
       fetchPaymentAccounts();
     } catch (err) { alert('Failed to delete.'); }
+  };
+
+  // 👉 Handler to update package details via backend API so changes persist globally
+  const handleUpdatePackage = async (pkg) => {
+    const newName = prompt(`Enter new name for package:`, pkg.name);
+    const newPrice = prompt(`Enter new price for ${pkg.name} (ETB):`, pkg.price);
+    const newDays = prompt(`Enter new duration days for ${pkg.name}:`, pkg.days);
+
+    if (newName !== null && newPrice !== null && newDays !== null) {
+      try {
+        const response = await API.put(`/admin/ad-packages/${pkg.id}`, {
+          name: newName,
+          price: Number(newPrice),
+          days: Number(newDays)
+        });
+        if (response.data.success) {
+          showToast(`Package "${newName}" updated successfully!`);
+          fetchAdPackages(); // Refresh package list from database
+        }
+      } catch (err) {
+        alert('Failed to update package on server.');
+      }
+    }
   };
 
   // Helper to resolve image paths safely across API base URL
@@ -383,14 +415,7 @@ const SuperAdminAdBanners = () => {
                     <p className="text-[11px] text-slate-500 font-semibold">{pkg.days} Days • {pkg.price.toLocaleString()} ETB</p>
                   </div>
                   <button
-                    onClick={() => {
-                      const newPrice = prompt(`Enter new price for ${pkg.name} (ETB):`, pkg.price);
-                      const newDays = prompt(`Enter new duration days for ${pkg.name}:`, pkg.days);
-                      if (newPrice !== null && newDays !== null) {
-                        setAdPackages(adPackages.map(p => p.id === pkg.id ? { ...p, price: Number(newPrice) || p.price, days: Number(newDays) || p.days } : p));
-                        showToast(`Package "${pkg.name}" updated successfully!`);
-                      }
-                    }}
+                    onClick={() => handleUpdatePackage(pkg)}
                     className="px-3 py-1.5 bg-[#1E4D58] text-white font-black text-[11px] rounded-xl cursor-pointer"
                   >
                     Edit Package

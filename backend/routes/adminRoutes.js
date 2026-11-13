@@ -55,6 +55,9 @@ router.get('/ad-banners', protect, requireAdmin, checkHandler(adminAdController.
 router.put('/ad-banners/:bannerId', protect, requireAdmin, checkHandler(adminAdController.updateAdStatus, 'adminAdController.updateAdStatus'));
 router.post('/ad-banners/create', protect, requireAdmin, upload.single('image'), checkHandler(adminAdController.createAdminAd, 'adminAdController.createAdminAd'));
 
+// 👇 ADD THESE TWO ADMIN PACKAGE ROUTES HERE:
+router.get('/ad-packages', protect, requireAdmin, checkHandler(adminAdController.getAdminPackages, 'adminAdController.getAdminPackages'));
+router.put('/ad-packages/:id', protect, requireAdmin, checkHandler(adminAdController.updatePackage, 'adminAdController.updatePackage'));
 // Payment Accounts Routes
 router.get('/payment-accounts', checkHandler(adminAdController.getPaymentAccounts, 'adminAdController.getPaymentAccounts'));
 router.post('/payment-accounts', protect, requireAdmin, checkHandler(adminAdController.savePaymentAccount, 'adminAdController.savePaymentAccount'));

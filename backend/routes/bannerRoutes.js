@@ -4,6 +4,10 @@ const { Op } = require('sequelize');
 const Banner = require('../models/Banner');
 const { protect } = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware'); // 👈 Use centralized Cloudinary upload middleware
+const adminAdController = require('../controllers/adminAdController'); // 👈 Import admin ad controller for packages
+
+// GET /api/banners/packages — Public endpoint for users to load active ad packages in the modal
+router.get('/packages', adminAdController.getPublicPackages);
 
 // GET /api/banners — Fetch live active banners for homepage display
 router.get('/', async (req, res) => {

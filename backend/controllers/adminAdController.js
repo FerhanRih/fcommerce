@@ -1,5 +1,5 @@
 // backend/controllers/adminAdController.js
-const { Banner, Store, User, PaymentAccount } = require('../models');
+const { Banner, Store, User, PaymentAccount , AdPackage } = require('../models');
 const { Op } = require('sequelize');
 
 const adminAdController = {
@@ -152,7 +152,63 @@ const adminAdController = {
     } catch (error) {
       return res.status(500).json({ success: false, message: 'Failed to delete account.' });
     }
+  },
+
+  // 👇 ADD THESE THREE NEW METHODS HERE:
+  getPublicPackages: async (req, res) => {
+    try {
+      let packages = await AdPackage.findAll();
+      if (packages.length === 0) {
+        packages = await Promise.all([
+          AdPackage.create({ name: '3-Day Flash Spotlight', days: 3, price: 1500 }),
+          AdPackage.create({ name: '7-Day Prime Carousel', days: 7, price: 3000 }),
+          AdPackage.create({ name: '30-Day Super Dominance', days: 30, price: 10000 })
+        ]);
+      }
+      return res.status(200).json({ success: true, packages });
+    } catch (error) {
+      console.error('Error fetching packages:', error);
+      return res.status(500).json({ success: false, message: 'Error fetching packages', error: error.message });
+    }
+  },
+
+  getAdminPackages: async (req, res) => {
+    try {
+      let packages = await AdPackage.findAll();
+      if (packages.length === 0) {
+        packages = await Promise.all([
+          AdPackage.create({ name: '3-Day Flash Spotlight', days: 3, price: 1500 }),
+          AdPackage.create({ name: '7-Day Prime Carousel', days: 7, price: 3000 }),
+          AdPackage.create({ name: '30-Day Super Dominance', days: 30, price: 10000 })
+        ]);
+      }
+      return res.status(200).json({ success: true, packages });
+    } catch (error) {
+      console.error('Error fetching admin packages:', error);
+      return res.status(500).json({ success: false, message: 'Error fetching admin packages', error: error.message });
+    }
+  },
+
+  updatePackage: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name, days, price } = req.body;
+      const pkg = await AdPackage.findByPk(id);
+      if (!pkg) {
+        return res.status(404).json({ success: false, message: 'Package not found' });
+      }
+      pkg.name = name || pkg.name;
+      pkg.days = days ? Number(days) : pkg.days;
+      pkg.price = price ? Number(price) : pkg.price;
+      await pkg.save();
+      return res.status(200).json({ success: true, message: 'Package updated successfully!', package: pkg });
+    } catch (error) {
+      console.error('Error updating package:', error);
+      return res.status(500).json({ success: false, message: 'Error updating package', error: error.message });
+    }
   }
+
 };
+
 
 module.exports = adminAdController;
