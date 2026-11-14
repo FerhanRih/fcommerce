@@ -115,7 +115,7 @@ const adminController = {
         });
       }
 
-      // 2. Phone Filter (Matches Order customerPhone, Buyer User.phone, or Store owner phone)
+     // 2. Phone Filter (Matches Order customerPhone or Buyer User.phone safely)
       if (phone && phone.trim()) {
         const cleanPhone = phone.trim();
         const phoneOr = [
@@ -123,9 +123,6 @@ const adminController = {
         ];
         if (User) {
           phoneOr.push({ '$User.phone$': { [Op.like]: `%${cleanPhone}%` } });
-        }
-        if (Store && User) {
-          phoneOr.push({ '$Store.user.phone$': { [Op.like]: `%${cleanPhone}%` } });
         }
         andConditions.push({ [Op.or]: phoneOr });
       }
@@ -197,7 +194,7 @@ const adminController = {
       return res.status(500).json({ success: false, message: 'Failed to retrieve all orders.' });
     }
   },
-  
+
   // 3. Marketplace Intelligence Leaderboard
   getMarketplaceIntelligence: async (req, res) => {
     try {
@@ -389,7 +386,6 @@ updatePlatformStatus: async (req, res) => {
     return res.status(500).json({ success: false, message: 'Failed to update status.' });
   }
 }
-
 
 };
 
