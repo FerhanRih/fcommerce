@@ -22,12 +22,12 @@ const SuperAdminAllOrders = () => {
       const token = localStorage.getItem('token');
       
       const params = new URLSearchParams();
-      if (phoneQuery) params.append('phone', phoneQuery);
-      if (nameQuery) params.append('search', nameQuery);
+      if (phoneQuery.trim()) params.append('phone', phoneQuery.trim());
+      if (nameQuery.trim()) params.append('search', nameQuery.trim());
       if (selectedDate) params.append('date', selectedDate);
 
-const response = await API.get(`/admin/all-orders?${params.toString()}`);
-const data = response.data;
+      const response = await API.get(`/admin/all-orders?${params.toString()}`);
+      const data = response.data;
       if (data.success) {
         setOrders(data.orders || []);
       }
@@ -38,9 +38,14 @@ const data = response.data;
     }
   };
 
+  // 🔄 Trigger fetch whenever any filter/search parameter changes with a smooth debounce effect
   useEffect(() => {
-    fetchAllOrders();
-  }, [selectedDate]);
+    const delayDebounceFn = setTimeout(() => {
+      fetchAllOrders();
+    }, 300); // 300ms debounce prevents excessive requests while typing
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [phoneQuery, nameQuery, selectedDate]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -196,13 +201,13 @@ const data = response.data;
                 <span className="text-[10px] font-black text-slate-400 uppercase">Store</span>
                 <p className="font-extrabold text-slate-900">{selectedOrder.Store?.store_name || selectedOrder.Store?.name || 'Store'}</p>
                 <p className="text-slate-500">
-  {selectedOrder.Store?.phoneNumber || selectedOrder.Store?.user?.phone || selectedOrder.Store?.User?.phone || 'N/A'}
-</p>
+                  {selectedOrder.Store?.phoneNumber || selectedOrder.Store?.user?.phone || selectedOrder.Store?.User?.phone || 'N/A'}
+                </p>
               </div>
               <div>
                 <span className="text-[10px] font-black text-slate-400 uppercase">Customer</span>
                 <p className="font-extrabold text-slate-900">{selectedOrder.User?.name || 'Customer'}</p>
-                <p className="text-slate-500">{selectedOrder.User?.phone || selectedOrder.customerPhone}</p>
+                <p className="text-slate-500">{selectedOrder.User?.phone || selectedOrder.customerPhone || 'N/A'}</p>
               </div>
             </div>
 

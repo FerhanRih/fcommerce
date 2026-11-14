@@ -78,16 +78,7 @@ const data = response.data;
               required
             />
           </div>
-          <div>
-            <label className="text-[10px] font-black text-slate-500 uppercase block mb-1">Store Phone Number</label>
-            <input
-              type="text"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800"
-              required
-            />
-          </div>
+          
         </div>
 
         <div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import API, { API_URL } from '../services/api';
+import { showAppNotification } from '../utils/notificationHelper';
 
 export default function TrackOrderPage({ currentUser, onBackToMarketplace }) {
   const [orders, setOrders] = useState([]);
@@ -46,11 +47,7 @@ export default function TrackOrderPage({ currentUser, onBackToMarketplace }) {
                 body = `Order #${ord.id} was declined by the merchant.`;
               }
 
-              new Notification(title, {
-                body,
-                icon: '/logo.png',
-                badge: '/logo.png'
-              });
+              showAppNotification(title, body);
             }
           }
           prevStatusesRef.current[ord.id] = ord.status;
@@ -85,22 +82,21 @@ export default function TrackOrderPage({ currentUser, onBackToMarketplace }) {
     try {
       const response = await API.put(`/orders/${orderId}/upload-receipt`, formData);
       
-      if (response && response.data && (response.data.success === true || response.data.success === 'true')) {
-        setNotices((prev) => ({ ...prev, [orderId]: '✓ Payment receipt uploaded successfully!' }));
-        
-        if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification('Receipt Uploaded', {
-            body: `Your receipt for order #${orderId} was uploaded successfully.`,
-            icon: '/logo.png'
-          });
-        }
+     if (response && response.data && (response.data.success === true || response.data.success === 'true')) {
+  setNotices((prev) => ({ ...prev, [orderId]: '✓ Payment receipt uploaded successfully!' }));
 
-        try {
-          await fetchUserOrders();
-        } catch (fetchErr) {
-          console.warn('Background order refresh after upload:', fetchErr);
-        }
-      } else {
+  // 👇 Clean, universal notification call
+  showAppNotification(
+    'Receipt Uploaded',
+    `Your receipt for order #${orderId} was uploaded successfully.`
+  );
+
+  try {
+    await fetchUserOrders();
+  } catch (fetchErr) {
+    console.warn('Background order refresh after upload:', fetchErr);
+  }
+} else {
         const errorMsg = response?.data?.message || 'Failed to upload receipt.';
         setNotices((prev) => ({ ...prev, [orderId]: errorMsg }));
       }

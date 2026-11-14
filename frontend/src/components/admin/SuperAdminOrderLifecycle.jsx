@@ -5,6 +5,7 @@ import {
   CreditCard, ShieldCheck, ExternalLink, Copy, AlertTriangle, Eye 
 } from 'lucide-react';
 import API from '../../services/api';
+import { showAppNotification } from '../../utils/notificationHelper';
  
 const SuperAdminOrderLifecycle = () => {
   const [activeSubTab, setActiveSubTab] = useState('requests'); // 'requests' | 'decision' | 'paid' | 'verified'
@@ -53,11 +54,7 @@ const SuperAdminOrderLifecycle = () => {
         body = `${count} order(s) have verified payments and are ready for dispatch.`;
       }
 
-      new Notification(title, {
-        body,
-        icon: '/logo.png',
-        badge: '/logo.png'
-      });
+     showAppNotification(title, body);
 
       sessionStorage.setItem(lastCountKey, count);
     }

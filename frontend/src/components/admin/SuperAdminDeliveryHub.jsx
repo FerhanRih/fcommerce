@@ -19,34 +19,9 @@ const SuperAdminDeliveryHub = () => {
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [inputPin, setInputPin] = useState('');
 
-  // Keep track of previous order count for notification triggers
-  const prevCountRef = useRef(0);
-
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
-  };
-
-  // 1. Request Browser Notification Permission on Mount
-  useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
-  }, []);
-
-  // 2. Notification Helper for New Deliveries
-  const checkAndNotifyDeliveries = (ordersList) => {
-    if (!('Notification' in window) || Notification.permission !== 'granted') return;
-
-    const count = ordersList.length;
-    if (count > prevCountRef.current && prevCountRef.current !== 0) {
-      new Notification('🚚 FCOMMERCE Delivery Queue Update', {
-        body: `You have ${count} active delivery order(s) requiring attention.`,
-        icon: '/logo.png',
-        badge: '/logo.png'
-      });
-    }
-    prevCountRef.current = count;
   };
 
   const fetchDeliveryOrders = async () => {
@@ -55,9 +30,7 @@ const SuperAdminDeliveryHub = () => {
       const response = await API.get(`/admin/delivery-orders?deliveryStatus=${filter}`);
       const data = response?.data;
       if (data && (data.success === true || data.success === 'true')) {
-        const fetchedOrders = data.orders || [];
-        setOrders(fetchedOrders);
-        checkAndNotifyDeliveries(fetchedOrders);
+        setOrders(data.orders || []);
       }
     } catch (error) {
       console.error('Fetch Delivery Orders Error:', error);
@@ -74,8 +47,13 @@ const SuperAdminDeliveryHub = () => {
     return () => clearInterval(intervalId);
   }, [filter]);
 
+  // 🛡️ Silent status update: NO toasts, NO browser notification alerts
   const updateStatus = async (orderId, newStatus, pin = null) => {
     try {
+      // Instantly close PIN modal & reset input so UI never stutters or re-prompts
+      setSelectedOrderForPin(null);
+      setInputPin('');
+
       const response = await API.put(`/admin/delivery-orders/${orderId}/status`, {
         status: newStatus,
         pin
@@ -83,18 +61,7 @@ const SuperAdminDeliveryHub = () => {
       const data = response?.data;
 
       if (data && (data.success === true || data.success === 'true')) {
-        showToast(`Order #${orderId} marked as ${newStatus.toUpperCase()}!`);
-        
-        // Notify Super Admin on successful status transition
-        if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification(`Order #${orderId} ${newStatus === 'dispatched' ? 'In Transit 🚚' : 'Delivered 🎉'}`, {
-            body: `Order #${orderId} was successfully updated to ${newStatus}.`,
-            icon: '/logo.png'
-          });
-        }
-
-        setSelectedOrderForPin(null);
-        setInputPin('');
+        // Silently refresh the delivery queue without any popups or alerts
         fetchDeliveryOrders();
       } else {
         showToast(data?.message || 'Failed to update status.');
@@ -116,14 +83,14 @@ const SuperAdminDeliveryHub = () => {
 
     window.location.href = smsUri;
     navigator.clipboard.writeText(rawMessage).then(() => {
-      showToast(`SMS Link Launched & Copied for ${cleanPhone}!`);
+      showToast(`SMS Link Copied for ${cleanPhone}!`);
     });
   };
 
   return (
     <div className="space-y-6">
       
-      {/* TOAST NOTIFICATION */}
+      {/* TOAST NOTIFICATION ONLY FOR ACTIONS LIKE SMS COPY */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-[#1E4D58] text-white px-5 py-3 rounded-2xl shadow-2xl text-xs font-black flex items-center space-x-2 animate-bounce">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />

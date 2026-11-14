@@ -104,31 +104,57 @@ const adminController = {
 
       const { phone, search, date } = req.query;
       const orderWhere = {};
-      const storeWhere = {};
-      const userWhere = {};
+      const andConditions = [];
 
+      // 1. Date Filter
       if (date) {
-        orderWhere.createdAt = {
-          [Op.between]: [`${date} 00:00:00`, `${date} 23:59:59`]
-        };
+        andConditions.push({
+          createdAt: {
+            [Op.between]: [`${date} 00:00:00`, `${date} 23:59:59`]
+          }
+        });
       }
 
-      if (phone) {
-        orderWhere[Op.or] = [
-          { customerPhone: { [Op.like]: `%${phone}%` } }
+      // 2. Phone Filter (Matches Order customerPhone, Buyer User.phone, or Store owner phone)
+      if (phone && phone.trim()) {
+        const cleanPhone = phone.trim();
+        const phoneOr = [
+          { customerPhone: { [Op.like]: `%${cleanPhone}%` } }
         ];
-        userWhere.phone = { [Op.like]: `%${phone}%` };
+        if (User) {
+          phoneOr.push({ '$User.phone$': { [Op.like]: `%${cleanPhone}%` } });
+        }
+        if (Store && User) {
+          phoneOr.push({ '$Store.user.phone$': { [Op.like]: `%${cleanPhone}%` } });
+        }
+        andConditions.push({ [Op.or]: phoneOr });
       }
 
-      if (search) {
-        storeWhere[Op.or] = [
-          { store_name: { [Op.like]: `%${search}%` } },
-          { name: { [Op.like]: `%${search}%` } }
-        ];
-        userWhere[Op.or] = [
-          ...(userWhere[Op.or] || []),
-          { name: { [Op.like]: `%${search}%` } }
-        ];
+      // 3. Name / Store / Order ID Filter (Matches Store name, Buyer name, or Order ID)
+      if (search && search.trim()) {
+        const cleanSearch = search.trim();
+        const searchOr = [];
+
+        if (Store) {
+          searchOr.push({ '$Store.store_name$': { [Op.like]: `%${cleanSearch}%` } });
+          searchOr.push({ '$Store.name$': { [Op.like]: `%${cleanSearch}%` } });
+        }
+        if (User) {
+          searchOr.push({ '$User.name$': { [Op.like]: `%${cleanSearch}%` } });
+        }
+        // Also allow searching by numeric Order ID (e.g. "42" or "#42")
+        const numericId = cleanSearch.replace(/^#/, '');
+        if (/^\d+$/.test(numericId)) {
+          searchOr.push({ id: Number(numericId) });
+        }
+
+        if (searchOr.length > 0) {
+          andConditions.push({ [Op.or]: searchOr });
+        }
+      }
+
+      if (andConditions.length > 0) {
+        orderWhere[Op.and] = andConditions;
       }
 
       const includeArray = [];
@@ -161,7 +187,8 @@ const adminController = {
         where: orderWhere,
         include: includeArray,
         order: [['createdAt', 'DESC']],
-        limit: 100
+        limit: 100,
+        subQuery: false // Critical: prevents Sequelize from breaking $Association.column$ filters with LIMIT
       });
 
       return res.status(200).json({ success: true, orders });
@@ -170,7 +197,7 @@ const adminController = {
       return res.status(500).json({ success: false, message: 'Failed to retrieve all orders.' });
     }
   },
-
+  
   // 3. Marketplace Intelligence Leaderboard
   getMarketplaceIntelligence: async (req, res) => {
     try {

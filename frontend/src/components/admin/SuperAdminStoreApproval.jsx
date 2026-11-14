@@ -5,6 +5,7 @@ import {
   Search, ShieldAlert, MapPin, Calendar, Navigation, Trash2 
 } from 'lucide-react';
 import API from '../../services/api';
+import { showAppNotification } from '../../utils/notificationHelper';
 
 const SuperAdminStoreApproval = () => {
   const [stores, setStores] = useState([]);
@@ -36,16 +37,13 @@ const SuperAdminStoreApproval = () => {
   }, []);
 
   // 2. Notification Helper for Pending Store Applications
-  const checkAndNotifyStores = (storesList) => {
-    if (!('Notification' in window) || Notification.permission !== 'granted') return;
-
+ const checkAndNotifyStores = (storesList) => {
     const count = storesList.filter(s => s.status !== 'approved').length;
     if (count > prevCountRef.current && prevCountRef.current !== 0) {
-      new Notification('🏪 FCOMMERCE Store Approval Alert', {
-        body: `You have ${count} pending merchant store application(s) awaiting review.`,
-        icon: '/logo.png',
-        badge: '/logo.png'
-      });
+      showAppNotification(
+        '🏪 FCOMMERCE Store Approval Alert',
+        `You have ${count} pending merchant store application(s) awaiting review.`
+      );
     }
     prevCountRef.current = count;
   };
@@ -99,12 +97,10 @@ const SuperAdminStoreApproval = () => {
           window.location.href = `sms:${cleanPhone}?body=${encodeURIComponent(smsMsg)}`;
         }
 
-        if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification('FCOMMERCE Admin', {
-            body: `Store application has been ${newStatus}!`,
-            icon: '/logo.png'
-          });
-        }
+        showAppNotification(
+          'FCOMMERCE Admin',
+          `Store application has been ${newStatus}!`
+        );
       } else {
         alert(data.message || 'Failed to update store status.');
       }

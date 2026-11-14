@@ -9,58 +9,75 @@ exports.getMarketplaceIntelligence = async (req, res) => {
     let topBuyer = null;
     let topProduct = null;
 
+    // 1. TOP SELLER STORE (Safe aggregate + direct lookup avoids SQL GROUP BY / alias crashes)
     try {
-      const topStoreRecord = await Order.findOne({
-        attributes: ['storeId', [sequelize.fn('COUNT', sequelize.col('storeId')), 'orderCount']],
+      const topStoreAgg = await Order.findOne({
+        attributes: [
+          'storeId',
+          [sequelize.fn('COUNT', sequelize.col('id')), 'orderCount']
+        ],
         where: { storeId: { [Op.ne]: null } },
         group: ['storeId'],
         order: [[sequelize.literal('orderCount'), 'DESC']],
-        include: [{ 
-          model: Store, 
-          as: 'Store',
-          include: [{ model: User, as: 'user', attributes: ['id', 'name', 'phone'] }]
-        }],
-        limit: 1
+        raw: true
       });
 
-      if (topStoreRecord) {
+      if (topStoreAgg && topStoreAgg.storeId) {
+        const store = await Store.findByPk(topStoreAgg.storeId);
+        let owner = null;
+        if (store && store.userId) {
+          owner = await User.findByPk(store.userId, {
+            attributes: ['id', 'name', 'phone']
+          });
+        }
+
         topStore = {
-          storeName: topStoreRecord.Store?.store_name || topStoreRecord.Store?.name || 'Store',
-          ownerName: topStoreRecord.Store?.user?.name || 'Merchant',
-          phone: topStoreRecord.Store?.user?.phone || topStoreRecord.Store?.phone || 'N/A',
-          ordersFulfilled: topStoreRecord.getDataValue('orderCount')
+          storeName: store?.store_name || store?.name || `Store #${topStoreAgg.storeId}`,
+          ownerName: owner?.name || store?.ownerName || 'Merchant',
+          phone: owner?.phone || store?.phone || store?.phoneNumber || 'N/A',
+          ordersFulfilled: Number(topStoreAgg.orderCount || 0)
         };
       }
     } catch (e) {
       console.error('Top Store Query Error:', e);
     }
 
+    // 2. TOP VOLUME BUYER (Safe aggregate + direct lookup)
     try {
-      const topBuyerRecord = await Order.findOne({
-        attributes: ['userId', [sequelize.fn('COUNT', sequelize.col('userId')), 'orderCount']],
+      const topBuyerAgg = await Order.findOne({
+        attributes: [
+          'userId',
+          [sequelize.fn('COUNT', sequelize.col('id')), 'orderCount']
+        ],
         where: { userId: { [Op.ne]: null } },
         group: ['userId'],
         order: [[sequelize.literal('orderCount'), 'DESC']],
-        include: [{ model: User, as: 'User', attributes: ['id', 'name', 'phone'] }],
-        limit: 1
+        raw: true
       });
 
-      if (topBuyerRecord) {
+      if (topBuyerAgg && topBuyerAgg.userId) {
+        const buyer = await User.findByPk(topBuyerAgg.userId, {
+          attributes: ['id', 'name', 'phone']
+        });
+
         topBuyer = {
-          name: topBuyerRecord.User?.name || 'Customer',
-          phone: topBuyerRecord.User?.phone || 'N/A',
-          totalOrders: topBuyerRecord.getDataValue('orderCount')
+          name: buyer?.name || `Customer #${topBuyerAgg.userId}`,
+          phone: buyer?.phone || 'N/A',
+          totalOrders: Number(topBuyerAgg.orderCount || 0)
         };
       }
     } catch (e) {
       console.error('Top Buyer Query Error:', e);
     }
 
+    // 3. TOP PRODUCT
     try {
       topProduct = await Product.findOne({
         order: [['createdAt', 'DESC']]
       });
-    } catch (e) {}
+    } catch (e) {
+      console.error('Top Product Query Error:', e);
+    }
 
     return res.status(200).json({
       success: true,

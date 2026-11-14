@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Send, Megaphone, CheckCircle2, Users, Store } from 'lucide-react';
 import API from '../../services/api';
+import { showAppNotification } from '../../utils/notificationHelper';
 
 const SuperAdminBroadcast = () => {
   const [message, setMessage] = useState('');
@@ -40,9 +41,7 @@ const SuperAdminBroadcast = () => {
         showToast('Broadcast notification dispatched successfully!');
         setMessage('');
 
-        if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification('FCOMMERCE', { body: message });
-        }
+       showAppNotification('FCOMMERCE Announcement', message);
       } else {
         showToast(data.message || 'Failed to send broadcast.');
       }

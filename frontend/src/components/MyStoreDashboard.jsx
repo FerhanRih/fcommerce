@@ -3,15 +3,17 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import OrdersTab from './vendor/OrdersTab';
 import BankSettingsTab from "./vendor/BankSettingsTab";
+import StoreReportsTab from './StoreReportsTab';
 import StoreSettingsPage from './vendor/StoreSettingsPage';
 import API, { API_URL } from '../services/api';
+import { showAppNotification } from '../utils/notificationHelper';
 
-export default function MyStoreDashboard({ currentStore, currentUser, onOpenCreateStore, onBackToMain, onLogout, onStoreUpdated }) {
+export default function MyStoreDashboard({ currentStore, currentUser, initialTab, onOpenCreateStore, onBackToMain, onLogout, onStoreUpdated }) {
   
   const activeUser = currentUser || currentStore?.user || {};
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('inventory'); // 'inventory', 'orders', 'reports', 'settings'
+  const [activeTab, setActiveTab] = useState(initialTab || 'inventory');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   // Merchant Products State
@@ -41,6 +43,9 @@ export default function MyStoreDashboard({ currentStore, currentUser, onOpenCrea
   const [minOrderQty, setMinOrderQty] = useState(1); // For creating products
   const [editMinOrderQty, setEditMinOrderQty] = useState(1); // For editing products
 
+  useEffect(() => {
+    if (initialTab) setActiveTab(initialTab);
+  }, [initialTab]);
   // Fetch Merchant's Listed Products
   const fetchStoreProducts = async () => {      
     if (!currentStore?.id) return;
@@ -145,20 +150,18 @@ const data = response.data;
         const lastKnownStatus = localStorage.getItem('merchant_store_last_status');
 
         if (lastKnownStatus && lastKnownStatus !== currentStatus) {
-          if ('Notification' in window && Notification.permission === 'granted') {
-            if (currentStatus === 'approved') {
-              new Notification('🎉 Store Approved!', {
-                body: 'Congratulations! Your store has been approved by FCOMMERCE administration.',
-                icon: '/logo.png'
-              });
-            } else if (currentStatus === 'rejected') {
-              new Notification('❌ Store Application Update', {
-                body: `Your store application was declined. Reason: ${data.store.rejectionReason || 'Review criteria not met.'}`,
-                icon: '/logo.png'
-              });
-            }
-          }
-        }
+  if (currentStatus === 'approved') {
+    showAppNotification(
+      '🎉 Store Approved!',
+      'Congratulations! Your store has been approved by FCOMMERCE administration.'
+    );
+  } else if (currentStatus === 'rejected') {
+    showAppNotification(
+      '❌ Store Application Update',
+      `Your store application was declined. Reason: ${data.store.rejectionReason || 'Review criteria not met.'}`
+    );
+  }
+}
         localStorage.setItem('merchant_store_last_status', currentStatus);
       }
     } catch (err) {
@@ -513,13 +516,10 @@ const data = response.data;
         {/* TAB CONTENT 2: ORDERS */}
         {activeTab === 'orders' && <OrdersTab currentStore={currentStore} setActiveStoreTab={setActiveTab} />}
 
-        {/* TAB CONTENT 3: REPORTS PLACEHOLDER */}
-        {activeTab === 'reports' && (
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
-            <h3 className="text-base font-black text-[#1E4D58] mb-1">Sales Reports</h3>
-            <p className="text-xs text-slate-500">Daily, weekly, and monthly PDF export report generator.</p>
-          </div>
-        )}
+  
+{activeTab === 'reports' && (
+  <StoreReportsTab currentStore={currentStore} />
+)}
 
         {/* TAB CONTENT 4: BANK SETTINGS */}
         {activeTab === 'bank-settings' && (

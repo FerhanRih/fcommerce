@@ -18,6 +18,7 @@ import OrderHistoryPage from './components/OrderHistoryPage';
 import UserSettingsPage from './components/UserSettingsPage';
 import SuperAdminDashboard from './components/SuperAdminDashboard';
 import TermsAndPrivacyPage from './components/TermsAndPrivacyPage';
+import { showAppNotification } from './utils/notificationHelper';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -108,13 +109,7 @@ const response = await API.get('/admin/broadcast-client');
           if (String(latestBroadcast.id) !== String(lastSeenId)) {
             localStorage.setItem('last_seen_broadcast_id', String(latestBroadcast.id));
 
-            if ('Notification' in window && Notification.permission === 'granted') {
-              new Notification('FCOMMERCE Announcement', {
-                body: latestBroadcast.message,
-                icon: '/logo.png',
-                badge: '/logo.png',
-              });
-            }
+            showAppNotification('FCOMMERCE Announcement', latestBroadcast.message);
           }
         }
       } catch (err) {

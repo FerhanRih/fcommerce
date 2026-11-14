@@ -4,6 +4,7 @@ import {
   Megaphone, CheckCircle2, XCircle, RefreshCw, DollarSign, Clock, Check, X, Eye, Plus, Trash2, Edit3, ShieldCheck 
 } from 'lucide-react';
 import API, { API_URL } from '../../services/api';
+import { showAppNotification } from '../../utils/notificationHelper';
 
 const SuperAdminAdBanners = () => {
   const [banners, setBanners] = useState([]);
@@ -44,14 +45,11 @@ const SuperAdminAdBanners = () => {
         const pendingCount = fetchedBanners.filter(b => b.status === 'pending').length;
         
         if (pendingCount > prevPendingCountRef.current && prevPendingCountRef.current !== 0) {
-          if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('📢 New Ad Campaign Request!', {
-              body: 'A vendor has submitted a new ad banner for review.',
-              icon: '/logo.png',
-              badge: '/logo.png'
-            });
-          }
-        }
+  showAppNotification(
+    '📢 New Ad Campaign Request!',
+    'A vendor has submitted a new ad banner for review.'
+  );
+}
         prevPendingCountRef.current = pendingCount;
         setBanners(fetchedBanners);
       }

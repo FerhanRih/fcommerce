@@ -1,6 +1,7 @@
 // frontend/src/components/vendor/OrdersTab.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import API, { API_URL } from '../../services/api';
+import { showAppNotification } from '../../utils/notificationHelper';
 
 export default function OrdersTab({ currentStore, setActiveStoreTab }) {
   console.log('🔍 [DEBUG] OrdersTab rendered with currentStore prop:', currentStore);
@@ -41,15 +42,12 @@ export default function OrdersTab({ currentStore, setActiveStoreTab }) {
       if (response && response.data && response.data.success) {
         const fetchedOrders = response.data.orders || [];
         
-        const newPending = fetchedOrders.filter((o) => o?.status === 'pending_merchant');
+      const newPending = fetchedOrders.filter((o) => o?.status === 'pending_merchant');
         if (newPending.length > prevPendingCountRef.current && prevPendingCountRef.current !== 0) {
-          if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('🛒 New Order Request!', {
-              body: `You have received a new order request awaiting your review.`,
-              icon: '/logo.png',
-              badge: '/logo.png'
-            });
-          }
+          showAppNotification(
+            '🛒 New Order Request!',
+            'You have received a new order request awaiting your review.'
+          );
         }
         prevPendingCountRef.current = newPending.length;
         setOrders(fetchedOrders);
@@ -99,12 +97,10 @@ export default function OrdersTab({ currentStore, setActiveStoreTab }) {
         setRejectedItemsMap({});
         setItemQuantitiesMap({});
 
-        if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification(`Order #${orderId} ${action === 'accept' ? 'Accepted' : 'Rejected'}`, {
-            body: `You successfully ${action}ed order #${orderId}.`,
-            icon: '/logo.png'
-          });
-        }
+        showAppNotification(
+          `Order #${orderId} ${action === 'accept' ? 'Accepted' : 'Rejected'}`,
+          `You successfully ${action}ed order #${orderId}.`
+        );
 
         try {
           await fetchStoreOrders();
@@ -140,12 +136,10 @@ export default function OrdersTab({ currentStore, setActiveStoreTab }) {
         setNotice('✓ Payment verified! Order marked for dispatch.');
         setTimeout(() => setNotice(''), 3000);
 
-        if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification('Payment Verified & Dispatched', {
-            body: `Payment for order #${orderId} has been verified successfully.`,
-            icon: '/logo.png'
-          });
-        }
+        showAppNotification(
+          'Payment Verified & Dispatched',
+          `Payment for order #${orderId} has been verified successfully.`
+        );
 
         try {
           await fetchStoreOrders();

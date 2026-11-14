@@ -7,6 +7,7 @@ const { protect } = require('../middleware/authMiddleware');
 const fs = require('fs');
 const path = require('path');
 const { SystemSetting } = require('../models');
+const { Op } = require('sequelize');
 
 const getPlatformStatus = async () => {
   try {
@@ -403,6 +404,78 @@ router.put('/:id/status', protect, async (req, res) => {
   } catch (error) {
     console.error('Status Update Error:', error);
     return res.status(500).json({ success: false, message: 'Failed to update order status.' });
+  }
+});
+
+// 📊 Merchant Reports & Audit Ledger (30-day automatic pruning + search & date filters)
+router.get('/vendor/:storeId/reports', protect, async (req, res) => {
+  try {
+    const { storeId } = req.params;
+    const { search, date, phone } = req.query;
+
+    // 1. Calculate 30 days ago threshold for automatic report pruning
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const whereClause = {
+      storeId: Number(storeId),
+      createdAt: { [Op.gte]: thirtyDaysAgo } // Automatically prunes records older than 30 days
+    };
+
+    // 2. Date Filter
+    if (date) {
+      whereClause.createdAt = {
+        [Op.between]: [`${date} 00:00:00`, `${date} 23:59:59`]
+      };
+    }
+
+    const andConditions = [];
+
+    // 3. Phone Filter
+    if (phone && phone.trim()) {
+      const cleanPhone = phone.trim();
+      andConditions.push({
+        [Op.or]: [
+          { customerPhone: { [Op.like]: `%${cleanPhone}%` } },
+          { '$User.phone$': { [Op.like]: `%${cleanPhone}%` } }
+        ]
+      });
+    }
+
+    // 4. Search Filter (Customer Name or Order ID)
+    if (search && search.trim()) {
+      const cleanSearch = search.trim();
+      const searchOr = [
+        { customerName: { [Op.like]: `%${cleanSearch}%` } },
+        { '$User.name$': { [Op.like]: `%${cleanSearch}%` } }
+      ];
+      
+      const numericId = cleanSearch.replace(/^#/, '');
+      if (/^\d+$/.test(numericId)) {
+        searchOr.push({ id: Number(numericId) });
+      }
+
+      andConditions.push({ [Op.or]: searchOr });
+    }
+
+    if (andConditions.length > 0) {
+      whereClause[Op.and] = andConditions;
+    }
+
+    const orders = await Order.findAll({
+      where: whereClause,
+      include: [
+        { model: Store, as: 'Store', required: false },
+        { model: User, as: 'User', required: false, attributes: ['id', 'name', 'phone'] }
+      ],
+      order: [['createdAt', 'DESC']],
+      subQuery: false
+    });
+
+    return res.status(200).json({ success: true, orders });
+  } catch (error) {
+    console.error('Fetch Merchant Reports Error:', error);
+    return res.status(500).json({ success: false, message: 'Server error retrieving merchant reports.' });
   }
 });
 
